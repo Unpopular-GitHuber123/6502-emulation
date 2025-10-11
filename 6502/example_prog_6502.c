@@ -32,34 +32,17 @@ int main() {
 	// This is just so the program is out of the way and it's easier to navigate main
 	loadProg(mem);
 
-	// Run the program until the clock is turned off or it gives an error
-	int already_printed = 0;
-	char *string = (char*) malloc(256);
-	int freeStringAdr = 0;
+	uint16_t instruction = 0x0000;
 	while (data.clk == 1) {
-		execute(&data, mem, &(data.PC), testing_mode);
-		if (data.exit_code != 0) {
-			break;
-		}
-		// Emulating a screen component here
-		if (IO_RANGE[1] == 0) {
-			already_printed = 0;
-		}
-		if (already_printed == 0 && IO_RANGE[1] == 1) {
-			already_printed = 1;
-			string[freeStringAdr] = mem[IO_RANGE[1] - 1];
-			freeStringAdr++;
-			printf("AAAAHHHHHHHHHHHHH");
-		}
+		data.PC++;
+		instruction = execute(&data, mem, data.PC, instruction, testing_mode);
 	}
+
+	printf("D: %d\n", data.D);
 
 	// Print some debug info
 	printf("Clock cycles: %d\n", data.cyclenum);
-	printf("Final address: %04x\n", data.PC - 1);
-
-	printf("%s", string);
-
-	free(string);
+	printf("Final address: %04x\n", (data.PC - 1) & 0xFFFF);
 
 	return data.exit_code;
 }
@@ -69,7 +52,12 @@ void loadProg(uint8_t *mem) {
 	JMP + Reset start address (this normally wouldn't contain a jump command, 
 	and only a vector, but it's easier this way)
 	*/
-	mem[0xFFFD] = INS_JMP_AB;
+
+	mem[0xFFFD] = INS_SED_IP;
+	mem[0xFFFE] = INS_NOP_IP;
+	mem[0xFFFF] = INS_BRK_IP;
+
+	/*mem[0xFFFD] = INS_JMP_AB;
 	mem[0xFFFE] = 0x00;
 	mem[0xFFFF] = 0xFF;
 
@@ -110,7 +98,7 @@ void loadProg(uint8_t *mem) {
 	mem[0x565A] = INS_STX_AB;
 	mem[0x565B] = IO_RANGE[1];
 	mem[0x565C] = (IO_RANGE[1] >> 8);
-	mem[0x565D] = INS_RTS_IP;
+	mem[0x565D] = INS_RTS_IP;*/
 
 	// Note: I'm not good at programming in assembly so this is probably horribly unoptimised
 	
