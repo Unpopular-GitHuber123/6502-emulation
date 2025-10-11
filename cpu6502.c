@@ -69,24 +69,16 @@ Helpful video: https://www.youtube.com/watch?v=qJgsuQoy9bc
 #define INS_LDA_IX 0xA1
 #define INS_LDA_IY 0xB1
 
+// UNIMPLEMENTED
 
-// Weird instructions (Necessary because of compiler restrictions but not realistic)
-#define WRD_PRT_IM 0x23 // Print immediate text value
+#define INS_TSX_IP 0xBA
+#define INS_TXS_IP 0x9A
 
-// NOT IMPLEMENTED \/
-#define WRD_WFT_IP 0xFF // Wait for text input
-#define WRD_PRT_AB 0x22
-#define WRD_PRT_AX 0x27
-#define WRD_PRT_AY 0x2F
-#define WRD_PRT_IX 0x2B
-#define WRD_PRT_IY 0x32
-
-// Memory:
+// Memory (Change the ranges as you want but be prepared for seg faults and unexpected behaviour):
 const uint16_t MAX_MEM = 0xFFFF;
 const uint16_t ZPAGE_RANGE[2] = {0x0000, 0x00FF};
 const uint16_t STACK_RANGE[2] = {0x0100, 0x01FF};
-const uint16_t RAM_RANGE[2] = {0x0200, 0x53FF};
-const uint16_t IO_RANGE[2] = {0x5400, 0x55FF};
+const uint16_t RAM_RANGE[2] = {0x0200, 0x55FF};
 const uint16_t ROM_RANGE[2] = {0x5600, 0xFFFF};
 const uint16_t SYSMEM_RANGE[2] = {0xFF00, 0xFFFF};
 
@@ -103,7 +95,7 @@ struct data {
 	uint16_t PC; // Program counter
 	uint8_t SP; // Stack pointer
     
-    	uint8_t exit_code;
+    uint8_t exit_code;
 	uint8_t A, X, Y; // Accumulator, X, Y
 
 	uint32_t cyclenum;
@@ -138,19 +130,6 @@ int getPS(struct data data) {
 	}
 
 	return PS;
-}
-
-uint8_t getInput(uint8_t *mem, uint8_t pin) {
-	return mem[IO_RANGE[0] + pin];
-}
-
-void waitForTextInput(uint8_t *mem, uint8_t pin, uint16_t bytes) {
-	char* string = (char*) malloc(bytes);
-	scanf("%s\n", string);
-	for (int i = 0; i < bytes; i++) {
-		mem[IO_RANGE[i]] = string[i];
-	}
-	return;
 }
 
 void stackPush(struct data *data, uint8_t *mem, uint8_t val) {
@@ -218,42 +197,32 @@ void execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t testing
 	{
 	case INS_JMP_AB:
 	{
-		uint8_t lowByte = mem[*address];
-		(*address)++;
-		uint8_t highByte = mem[*address];
-		(*address) = (lowByte | (highByte << 8));
+		(*address) = getWord(data, address, mem);
 		data -> cyclenum += 3;
 	}
 	break;
         
-        case WRD_PRT_IM:
-        {
-        	printf("%c", mem[*address]);
-        	(*address)++;
-        }
-        break;
+    case INS_JSR_AB:
+    {
+        stackPush(data, mem, (*address) - 1 & 0b00001111);
+        stackPush(data, mem, ((*address) - 1) >> 8);
+        *address = getWord(data, address, mem) - 2;
+    
+    
+        data -> cyclenum += 6;
+    }
+    break;
         
-        case INS_JSR_AB:
-        {
-        	stackPush(data, mem, (*address) - 1 & 0b00000011);
-        	stackPush(data, mem, ((*address) - 1) >> 8);
-        	*address = getWord(data, address, mem);
-        
-        
-        	data -> cyclenum += 6;
-        }
-        break;
-        
-    	case INS_RTS_IP:
-    	{
-            	uint8_t lowByte = stackPop(data, mem);
-        	uint8_t highByte = stackPop(data, mem);
+    case INS_RTS_IP:
+    {
+        uint8_t lowByte = stackPop(data, mem);
+        uint8_t highByte = stackPop(data, mem);
             
-        	(*address) = (lowByte | (highByte << 8)) + 3;
+        (*address) = (lowByte | (highByte << 8)) + 5;
         
-            	data -> cyclenum += 6;
-    	}
-    	break;
+        data -> cyclenum += 6;
+    }
+    break;
         
 	case INS_CLV_IP:
 	{
@@ -299,7 +268,7 @@ void execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t testing
 	}
 	break;
 
-    	case INS_STA_AB:
+    case INS_STA_AB:
 	{
 		storeMem(mem, getWord(data, address, mem), data -> A, data);
 		data -> cyclenum += 4;
@@ -313,6 +282,7 @@ void execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t testing
 		data -> Z = (data -> A == 0);
 		data -> N = (data -> A & 0b10000000) > 0;
 		data -> cyclenum += 2;
+		(*address)++;
 	}
 	break;
 	case INS_LDA_ZP:
@@ -322,6 +292,7 @@ void execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t testing
 		data -> Z = (data -> A == 0);
 		data -> N = (data -> A & 0b10000000) > 0;
 		data -> cyclenum += 3;
+		(*address)++;
 	}
 	break;
 	case INS_LDA_ZX:
@@ -329,6 +300,7 @@ void execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t testing
 		uint8_t val = mem[data -> X];
 		setFlagsLDA(data, val);
 		data -> cyclenum += 4;
+		(*address)++;
 	}
 	break;
 	case INS_LDA_AB:
@@ -385,6 +357,7 @@ void execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t testing
 		data -> Z = (data -> X == 0);
 		data -> N = (data -> X & 0b10000000) > 0;
 		data -> cyclenum += 2;
+		(*address)++;
 	}
 	break;
 
@@ -395,19 +368,20 @@ void execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t testing
 		data -> Z = (data -> Y == 0);
 		data -> N = (data -> Y & 0b10000000) > 0;
 		data -> cyclenum += 2;
+		(*address)++;
 	}
 	break;
 
 	case INS_STX_AB:
 	{
-		storeMem(mem, data -> X, mem[*address], data);
+		storeMem(mem, getWord(data, address, mem), data -> X, data);
 		data -> cyclenum += 4;
 	}
 	break;
 
 	case INS_STY_AB:
 	{
-		storeMem(mem, data -> Y, mem[*address], data);
+		storeMem(mem, getWord(data, address, mem), data -> Y, data);
 		data -> cyclenum += 4;
 	}
 	break;
@@ -417,19 +391,43 @@ void execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t testing
 		stackPush(data, mem, *address);
 		stackPush(data, mem, getPS(*data));
 		data -> clk = 0;
+		data -> B = 1;
 		data -> cyclenum += 4;
+	}
+	break;
+
+	case INS_NOP_IP:
+	{
+		data -> cyclenum += 1;
 	}
 	break;
 
 	default:
 		data -> cyclenum++;
-		//printf("Instruction %02x at address %04x not handled\n", instruction, *address - 1);
+		printf("Unknown instruction %02x at address %04x.\n", instruction, *address - 1);
+		break;
 	}
-	if (testing_mode == 1) {
-	    printf("address: %04x\n", *address);
+
+	if (testing_mode >= 1) {
+	    printf("address: %04x\n", *address - 1);
 	    printf("instruction: %02x\n", instruction);
-	    printf("PS reg: %02x\n", getPS(*data));
+	}
+	if (testing_mode > 1) {
+		printf("PS reg: %02x\n\n", getPS(*data));
+	}
+	if (testing_mode > 2) {
+	    printf("X: %02x\n", data -> X);
+	    printf("Y: %02x\n", data -> Y);
+		printf("A: %02x\n", data -> A);
 	}
 	
+	switch (data -> exit_code) {
+	case 1:
+		printf("Err code 0001: Segmentation fault at address: %04x\n", *address);
+		break;
+	default:
+		break;
+	}
+
 	return;
 }
