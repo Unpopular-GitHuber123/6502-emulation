@@ -11,8 +11,10 @@ of the IO range.)
 const uint16_t IO_RANGE[2] = {0x5500, 0x55FF};
 
 int main() {
-	// Set the testing mode: 0 is no debug info, 1 is some, 2 is most, 3 is everything plus the registers.
-	uint8_t testing_mode = 3;
+	// Set the testing mode: 0 is no debug info, 1 is some (e.g printing the address), 
+	// 2 is more (e.g printing addresses jumped to), 3 is most (e.g printing values 
+	// pushed to/pulled from the stack), 4 is everything (e.g printing the registers)
+	uint8_t testing_mode = 4;
 	
 	// Make the data struct that contains all of the register info
 	struct data data;
@@ -32,13 +34,9 @@ int main() {
 	// This is just so the program is out of the way and it's easier to navigate main
 	loadProg(mem);
 
-	uint16_t instruction = 0x0000;
 	while (data.clk == 1) {
-		data.PC++;
-		instruction = execute(&data, mem, data.PC, instruction, testing_mode);
+		execute(&data, mem, &data.PC, testing_mode);
 	}
-
-	printf("D: %d\n", data.D);
 
 	// Print some debug info
 	printf("Clock cycles: %d\n", data.cyclenum);
@@ -53,9 +51,17 @@ void loadProg(uint8_t *mem) {
 	and only a vector, but it's easier this way)
 	*/
 
-	mem[0xFFFD] = INS_SED_IP;
-	mem[0xFFFE] = INS_NOP_IP;
-	mem[0xFFFF] = INS_BRK_IP;
+	mem[0xFFFC] = INS_JMP_AB;
+	mem[0xFFFD] = 0x00;
+	mem[0xFFFE] = 0x80;
+
+	mem[0x8000] = INS_JSR_AB;
+	mem[0x8001] = 0x50;
+	mem[0x8002] = 0x80;
+	mem[0x8003] = INS_BRK_IP;
+
+	mem[0x8050] = INS_SED_IP;
+	mem[0x8051] = INS_RTS_IP;
 
 	/*mem[0xFFFD] = INS_JMP_AB;
 	mem[0xFFFE] = 0x00;

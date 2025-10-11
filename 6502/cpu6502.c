@@ -24,8 +24,8 @@ Helpful video: https://www.youtube.com/watch?v=qJgsuQoy9bc
 const uint16_t MAX_MEM = 0xFFFF;
 const uint16_t ZPAGE_RANGE[2] = {0x0000, 0x00FF};
 const uint16_t STACK_RANGE[2] = {0x0100, 0x01FF};
-const uint16_t RAM_RANGE[2] = {0x0200, 0x55FF};
-const uint16_t ROM_RANGE[2] = {0x5600, 0xFFFF};
+const uint16_t RAM_RANGE[2] = {0x0200, 0x7FFF};
+const uint16_t ROM_RANGE[2] = {0x8000, 0xFFFF};
 const uint16_t SYSMEM_RANGE[2] = {0xFF00, 0xFFFF};
 
 struct data {
@@ -78,17 +78,26 @@ int getPS(struct data data) {
 	return PS;
 }
 
-void stackPush(struct data *data, uint8_t *mem, uint8_t val) {
+void stackPush(struct data *data, uint8_t *mem, uint8_t val, uint8_t testing_mode) {
 	mem[data -> SP + STACK_RANGE[0]] = val;
 
 	data -> SP--;
+
+	if (testing_mode > 2) {
+		printf("Value pushed to stack: %02x\n", val);
+	}
+
 	return;
 }
 
-uint8_t stackPop(struct data *data, uint8_t *mem) {
+uint8_t stackPop(struct data *data, uint8_t *mem, uint8_t testing_mode) {
+	data -> SP++;
 	uint8_t toReturn = mem[data -> SP + STACK_RANGE[0]];
 
-	data -> SP++;
+	if (testing_mode > 2) {
+		printf("Value returned from stack: %02x\n", toReturn);
+	}
+
 	return toReturn;
 }
 
@@ -112,7 +121,6 @@ uint16_t getWord(struct data *data, uint16_t *address, uint8_t *mem) {
 	uint8_t lowByte = mem[*address];
 	(*address)++;
 	uint8_t highByte = mem[*address];
-	(*address)++;
 	return (lowByte | (highByte << 8));
 }
 
@@ -133,23 +141,50 @@ struct data reset(struct data data) {
 	return data;
 }
 
-uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t instruction, uint8_t testing_mode) {
-	data -> cyclenum += cycles[instruction];
-	if (instruction == 0x0000) {
-		instruction = mem[*address];
-		return instruction;
+uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t testing_mode) {
+	if (testing_mode > 0) {
+		printf("Instruction: %02x\n", mem[*address]);
+		printf("Address: %04x\n", *address);
 	}
-
-
-	printf("Instruction: %02x\n", instruction);
-	printf("Address: %04x\n", *address);
-	switch (instruction) {
+	switch (mem[*address]) {
 		case INS_BRK_IP:
 			data -> clk = 0;
 			break;
 		case INS_JMP_AB:
+			(*address)++;
+			*address = getWord(data, address, mem) - 1;
+			if (testing_mode > 1) {
+				printf("Address jumped to: %04x\n", *address + 1);
+			}
+			break;
+		case INS_JMP_ID:
+			(*address)++;
 			uint16_t addr = getWord(data, address, mem);
-			*address = addr;
+			(*address) = getWord(data, &addr, mem) - 1;
+			if (testing_mode > 1) {
+				printf("Address jumped to: %04x\n", *address + 1);
+			}
+			break;
+		case INS_JSR_AB:
+			(*address)++;
+			stackPush(data, mem, (*address) - 1, testing_mode);
+			stackPush(data, mem, ((*address) - 1) >> 8, testing_mode);
+			*address = getWord(data, address, mem) - 1;
+			if (testing_mode > 1) {
+				printf("Address jumped to: %04x\n", *address + 1);
+			}
+			break;
+		case INS_RTS_IP:
+			uint8_t highByte = stackPop(data, mem, testing_mode);
+			uint8_t lowByte = stackPop(data, mem, testing_mode);
+			(*address) = (lowByte | (highByte << 8));
+			if (testing_mode > 3) {
+				printf("Low address byte: %02x\n", lowByte);
+				printf("High address byte: %02x\n", highByte);
+			}
+			if (testing_mode > 1) {
+				printf("Address returned to: %04x\n", *address + 1);
+			}
 			break;
 		case INS_CLD_IP:
 			data -> D = 0;
@@ -157,9 +192,37 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t ins
 		case INS_SED_IP:
 			data -> D = 1;
 			break;
+		case INS_CLC_IP:
+			data -> C = 0;
+			break;
+		case INS_SEC_IP:
+			data -> C = 1;
+			break;
+		case INS_CLI_IP:
+			data -> I = 0;
+			break;
+		case INS_SEI_IP:
+			data -> I = 1;
+			break;
+		case INS_CLV_IP:
+			data -> V = 0;
+			break;
+		case INS_NOP_IP:
+			break;
 		default:
-			printf("Unrecognised instruction at address: %04x", *address);
+			printf("Unrecognised instruction at address: %04x\n", *address);
 	}
-
-	return 0x0000;
+	if (testing_mode > 3) {
+		printf("PS: %02x\n", getPS(*data));
+		printf("PC: %04x\n", data -> PC);
+		printf("A: %d\n", data -> A);
+		printf("X: %d\n", data -> X);
+		printf("Y: %d\n", data -> Y);
+		printf("SP: %d\n", data -> SP);
+	}
+	if (testing_mode > 0) {
+		printf("\n");
+	}
+	(*address)++;
+	return 0x0002;
 }

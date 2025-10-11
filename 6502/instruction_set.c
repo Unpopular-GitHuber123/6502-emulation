@@ -1,9 +1,10 @@
 // Opcodes:
 
-// UNIMPLEMENTED:
+// IMPLEMENTED:
 
 // System control
 #define INS_BRK_IP 0x00
+#define INS_NOP_IP 0x02
 
 // Processing status
 #define INS_CLD_IP 0xD8
@@ -17,10 +18,13 @@
 
 // Jump
 #define INS_JMP_AB 0x4C
+#define INS_JMP_ID 0x6C
 
 // Jump to/return from subroutine
 #define INS_JSR_AB 0x20
 #define INS_RTS_IP 0x60
+
+// UNIMPLEMENTED
 
 // Store Y
 #define INS_STY_AB 0x84
@@ -50,11 +54,3 @@
 // X stack shii
 #define INS_TSX_IP 0xBA
 #define INS_TXS_IP 0x9A
-
-int cycles[256] = {
-    7,
-    6,
-    0,
-    0,
-    0
-};
