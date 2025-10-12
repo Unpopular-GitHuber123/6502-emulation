@@ -4,7 +4,8 @@
 
 // System control
 #define INS_BRK_IP 0x00
-#define INS_NOP_IP 0x02
+#define INS_NOP_IP 0xEA
+#define INS_RTI_IP 0x40
 
 // Meta (there isn't any hardware so these are necessary)
 #define MTA_OFF_IP 0x03
@@ -37,11 +38,14 @@
 #define INS_ADC_IX 0x61
 #define INS_ADC_IY 0x71
 
-#define INS_ASL_AC 0x0A
-#define INS_ASL_ZP 0x06
-#define INS_ASL_ZX 0x16
-#define INS_ASL_AB 0x0E
-#define INS_ASL_AX 0x1E
+#define INS_SBC_IM 0xE9
+#define INS_SBC_ZP 0xE5
+#define INS_SBC_ZX 0xF5
+#define INS_SBC_AB 0xED
+#define INS_SBC_AX 0xFD
+#define INS_SBC_AY 0xF9
+#define INS_SBC_IX 0xE1
+#define INS_SBC_IY 0xF1
 
 // Logical
 #define INS_AND_IM 0x29
@@ -61,6 +65,41 @@
 #define INS_EOR_AY 0x59
 #define INS_EOR_IX 0x41
 #define INS_EOR_IY 0x51
+
+#define INS_ORA_IM 0x09
+#define INS_ORA_ZP 0x05
+#define INS_ORA_ZX 0x15
+#define INS_ORA_AB 0x0D
+#define INS_ORA_AX 0x1D
+#define INS_ORA_AY 0x19
+#define INS_ORA_IX 0x01
+#define INS_ORA_IY 0x11
+
+// Bit shifts/rotates
+
+#define INS_LSR_AC 0x4A
+#define INS_LSR_ZP 0x46
+#define INS_LSR_ZX 0x56
+#define INS_LSR_AB 0x4E
+#define INS_LSR_AX 0x5E
+
+#define INS_ASL_AC 0x0A
+#define INS_ASL_ZP 0x06
+#define INS_ASL_ZX 0x16
+#define INS_ASL_AB 0x0E
+#define INS_ASL_AX 0x1E
+
+#define INS_ROL_AC 0x2A
+#define INS_ROL_ZP 0x26
+#define INS_ROL_ZX 0x36
+#define INS_ROL_AB 0x2E
+#define INS_ROL_AX 0x3E
+
+#define INS_ROR_AC 0x6A
+#define INS_ROR_ZP 0x66
+#define INS_ROR_ZX 0x76
+#define INS_ROR_AB 0x6E
+#define INS_ROR_AX 0x7E
 
 // Compares
 #define INS_CMP_IM 0xC9
@@ -107,6 +146,22 @@
 #define INS_INC_AB 0xEE
 #define INS_INC_AX 0xFE
 
+#define INS_STA_ZP 0x85
+#define INS_STA_ZX 0x95
+#define INS_STA_AB 0x8D
+#define INS_STA_AX 0x9D
+#define INS_STA_AY 0x99
+#define INS_STA_IX 0x81
+#define INS_STA_IY 0x91
+
+#define INS_STX_AB 0x86
+#define INS_STX_ZP 0x96
+#define INS_STX_ZY 0x8E
+
+#define INS_STY_AB 0x84
+#define INS_STY_ZP 0x94
+#define INS_STY_ZX 0x8C
+
 // Registers
 
 #define INS_DEX_IP 0xCA
@@ -115,8 +170,27 @@
 #define INS_INX_IP 0xE8
 #define INS_INY_IP 0xC8
 
+#define INS_PHA_IP 0x48
+#define INS_PHP_IP 0x08
+#define INS_PLA_IP 0x68
+#define INS_PLP_IP 0x28
+
+// Transferring
+
+#define INS_TAX_IP 0xAA
+#define INS_TAY_IP 0xA8
+#define INS_TYA_IP 0x98
+#define INS_TXA_IP 0x8A
+
+#define INS_TSX_IP 0xBA
+#define INS_TXS_IP 0x9A
+
 // Load Y
 #define INS_LDY_IM 0xA0
+#define INS_LDY_ZP 0xA4
+#define INS_LDY_ZX 0xB4
+#define INS_LDY_AB 0xAC
+#define INS_LDY_AX 0xBC
 
 // Load X
 #define INS_LDX_IM 0xA2
@@ -134,13 +208,3 @@
 #define INS_LDA_AY 0xB9
 #define INS_LDA_IX 0xA1
 #define INS_LDA_IY 0xB1
-
-// UNIMPLEMENTED
-
-#define INS_STY_AB 0x84
-#define INS_STA_AB 0x85
-#define INS_STX_AB 0x86
-
-// X stack shii
-#define INS_TSX_IP 0xBA
-#define INS_TXS_IP 0x9A
