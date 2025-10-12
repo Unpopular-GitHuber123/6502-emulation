@@ -147,8 +147,205 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 		printf("Address: %04x\n", *address);
 	}
 	switch (mem[*address]) {
-		case INS_BRK_IP:
+		case MTA_OFF_IP:
 			data -> clk = 0;
+			break;
+		case INS_BRK_IP:
+			uint16_t temp = 0xFFFE;
+			stackPush(data, mem, data -> PC, testing_mode);
+			stackPush(data, mem, getPS(*data), testing_mode);
+			data -> B = 1;
+			data -> PC = getWord(data, &temp, mem);
+			break;
+		case INS_DEC_ZP:
+			(*address)++;
+			mem[mem[*address]]--;
+			break;
+		case INS_DEC_ZX:
+			(*address)++;
+			mem[(mem[*address] + data -> X) & 0b11111111]--;
+			break;
+		case INS_DEC_AB:
+			(*address)++;
+			mem[getWord(data, address, mem)]--;
+			break;
+		case INS_DEC_AX:
+			(*address)++;
+			mem[getWord(data, address, mem) + data -> X]--;
+			break;
+		case INS_INC_ZP:
+			(*address)++;
+			mem[mem[*address]]++;
+			break;
+		case INS_INC_ZX:
+			(*address)++;
+			mem[(mem[*address] + data -> X) & 0b11111111]++;
+			break;
+		case INS_INC_AB:
+			(*address)++;
+			mem[getWord(data, address, mem)]++;
+			break;
+		case INS_INC_AX:
+			(*address)++;
+			mem[getWord(data, address, mem) + data -> X]++;
+			break;
+		case INS_DEX_IP:
+			data -> X--;
+			data -> Z = (data -> X == 0);
+			data -> B = (data -> X & 0b10000000 > 1);
+			break;
+		case INS_INX_IP:
+			data -> X++;
+			data -> Z = (data -> X == 0);
+			data -> B = (data -> X & 0b10000000 > 1);
+			break;
+		case INS_DEY_IP:
+			data -> Y--;
+			data -> Z = (data -> Y == 0);
+			data -> B = (data -> Y & 0b10000000 > 1);
+			break;
+		case INS_INY_IP:
+			data -> Y++;
+			data -> Z = (data -> Y == 0);
+			data -> B = (data -> Y & 0b10000000 > 1);
+			break;
+		case INS_ASL_AC:
+			data -> C = ((data -> A & 0b10000000) > 0);
+			data -> A << 1;
+			data -> Z = (data -> A == 0);
+			data -> N = ((data -> A & 0b10000000) > 0);
+			break;
+		case INS_ASL_ZP:
+			uint16_t *temp1 = (uint16_t*) &(mem[mem[*address]]);
+			(*address)++;
+			data -> C = ((*temp1 & 0b10000000) > 0);
+			*temp1 << 1;
+			data -> Z = (*temp1 == 0);
+			data -> N = ((*temp1 & 0b10000000) > 0);
+			break;
+		case INS_ASL_ZX:
+			(*address)++;
+			temp1 = (uint16_t*) (uint8_t*) &(mem[mem[*address] + data -> X]);
+			data -> C = ((*temp1 & 0b10000000) > 0);
+			*temp1 << 1;
+			data -> Z = (*temp1 == 0);
+			data -> N = ((*temp1 & 0b10000000) > 0);
+			break;
+		case INS_ASL_AB:
+			(*address)++;
+			temp1 = (uint16_t*) &(mem[getWord(data, address, mem)]);
+			data -> C = ((*temp1 & 0b10000000) > 0);
+			*temp1 << 1;
+			data -> Z = (*temp1 == 0);
+			data -> N = ((*temp1 & 0b10000000) > 0);
+			break;
+		case INS_ASL_AX:
+			(*address)++;
+			temp1 = (uint16_t*) &(mem[getWord(data, address, mem) + data -> X]);
+			data -> C = ((*temp1 & 0b10000000) > 0);
+			*temp1 << 1;
+			data -> Z = (*temp1 == 0);
+			data -> N = ((*temp1 & 0b10000000) > 0);
+			break;
+		case INS_CMP_IM:
+			(*address)++;
+			temp = (uint8_t) data -> A - mem[*address];
+			data -> N = (temp & 0b10000000 > 0);
+			data -> C = (data -> A >= mem[*address]);
+			data -> Z = (data -> A > mem[*address]);
+			break;
+		case INS_CMP_ZP:
+			(*address)++;
+			temp = (uint8_t) data -> A - mem[mem[*address]];
+			data -> N = (temp & 0b10000000 > 0);
+			data -> C = (data -> A >= mem[*address]);
+			data -> Z = (data -> A > mem[*address]);
+			break;
+		case INS_CMP_ZX:
+			(*address)++;
+			temp = (uint8_t) data -> A - mem[(mem[*address] + data -> X) & 0b11111111];
+			data -> N = (temp & 0b10000000 > 0);
+			data -> C = (data -> A >= mem[*address]);
+			data -> Z = (data -> A > mem[*address]);
+			break;
+		case INS_CMP_AB:
+			(*address)++;
+			temp = (uint8_t) data -> A - mem[getWord(data, address, mem)];
+			data -> N = (temp & 0b10000000 > 0);
+			data -> C = (data -> A >= mem[*address]);
+			data -> Z = (data -> A > mem[*address]);
+			break;
+		case INS_CMP_AX:
+			(*address)++;
+			temp = (uint8_t) data -> A - mem[(getWord(data, address, mem) + data -> X) & 0b11111111];
+			data -> N = (temp & 0b10000000 > 0);
+			data -> C = (data -> A >= mem[*address]);
+			data -> Z = (data -> A > mem[*address]);
+			break;
+		case INS_CMP_AY:
+			(*address)++;
+			temp = (uint8_t) data -> A - mem[(getWord(data, address, mem) + data -> Y) & 0b11111111];
+			data -> N = (temp & 0b10000000 > 0);
+			data -> C = (data -> A >= mem[*address]);
+			data -> Z = (data -> A > mem[*address]);
+			break;
+		case INS_CMP_IX:
+			(*address)++;
+			uint8_t temp2 = mem[(mem[*address] + data -> X) & 0b11111111];
+			temp = (data -> A - mem[temp2]) & 0b11111111;
+			data -> N = (temp & 0b10000000 > 0);
+			data -> C = (data -> A >= mem[*address]);
+			data -> Z = (data -> A > mem[*address]);
+			break;
+		case INS_CMP_IY:
+			(*address)++;
+			temp2 = mem[mem[*address]];
+			temp = (data -> A - ((getWord(data, (uint16_t*) (&temp2), mem) + data -> Y) & 0b11111111)) & 0b11111111;
+			data -> N = (temp & 0b10000000 > 0);
+			data -> C = (data -> A >= mem[*address]);
+			data -> Z = (data -> A > mem[*address]);
+			break;
+		case INS_CPX_IM:
+			(*address)++;
+			temp = (uint8_t) data -> X - mem[*address];
+			data -> N = (temp & 0b10000000 > 0);
+			data -> C = (data -> X >= mem[*address]);
+			data -> Z = (data -> X > mem[*address]);
+			break;
+		case INS_CPX_ZP:
+			(*address)++;
+			temp = (uint8_t) data -> X - mem[mem[*address]];
+			data -> N = (temp & 0b10000000 > 0);
+			data -> C = (data -> X >= mem[*address]);
+			data -> Z = (data -> X > mem[*address]);
+			break;
+		case INS_CPX_AB:
+			(*address)++;
+			temp = (uint8_t) data -> X - mem[*address];
+			data -> N = (temp & 0b10000000 > 0);
+			data -> C = (data -> X >= mem[*address]);
+			data -> Z = (data -> X > mem[*address]);
+			break;
+		case INS_CPY_IM:
+			(*address)++;
+			temp = (uint8_t) data -> Y - mem[*address];
+			data -> N = (temp & 0b10000000 > 0);
+			data -> C = (data -> Y >= mem[*address]);
+			data -> Z = (data -> Y > mem[*address]);
+			break;
+		case INS_CPY_ZP:
+			(*address)++;
+			temp = (uint8_t) data -> Y - mem[mem[*address]];
+			data -> N = (temp & 0b10000000 > 0);
+			data -> C = (data -> Y >= mem[*address]);
+			data -> Z = (data -> Y > mem[*address]);
+			break;
+		case INS_CPY_AB:
+			(*address)++;
+			temp = (uint8_t) data -> Y - mem[*address];
+			data -> N = (temp & 0b10000000 > 0);
+			data -> C = (data -> Y >= mem[*address]);
+			data -> Z = (data -> Y > mem[*address]);
 			break;
 		case INS_AND_IM:
 			(*address)++;
@@ -188,17 +385,172 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_AND_IX:
 			(*address)++;
-			uint16_t temp = (uint8_t) (mem[*address] + data -> X);
+			temp = (uint8_t) (mem[*address] + data -> X);
 			data -> A = (data -> A & mem[getWord(data, &temp, mem)]);
 			data -> Z = (data -> A == 0);
 			data -> N = (data -> A & 0b10000000 > 0);
 			break;
 		case INS_AND_IY:
 			(*address)++;
-			temp = (uint8_t) (mem[*address] + data -> Y);
-			data -> A = (data -> A & mem[getWord(data, &temp, mem)]);
+			temp = (mem[*address]) & 0b11111111;
+			data -> A = (data -> A & mem[(getWord(data, &temp, mem) + data -> Y) & 0b11111111]);
 			data -> Z = (data -> A == 0);
 			data -> N = (data -> A & 0b10000000 > 0);
+			break;
+		case INS_EOR_IM:
+			(*address)++;
+			data -> A = (data -> A ^ mem[*address]);
+			data -> Z = (data -> A == 0);
+			data -> N = (data -> A & 0b10000000 > 0);
+			break;
+		case INS_EOR_ZP:
+			(*address)++;
+			data -> A = (data -> A ^ mem[mem[*address]]);
+			data -> Z = (data -> A == 0);
+			data -> N = (data -> A & 0b10000000 > 0);
+			break;
+		case INS_EOR_ZX:
+			(*address)++;
+			data -> A = (data -> A ^ (uint8_t) (mem[mem[*address] + data -> X]));
+			data -> Z = (data -> A == 0);
+			data -> N = (data -> A & 0b10000000 > 0);
+			break;
+		case INS_EOR_AB:
+			(*address)++;
+			data -> A = (data -> A ^ (uint8_t) mem[getWord(data, address, mem)]);
+			data -> Z = (data -> A == 0);
+			data -> N = (data -> A & 0b10000000 > 0);
+			break;
+		case INS_EOR_AX:
+			(*address)++;
+			data -> A = (data -> A ^ (uint8_t) mem[getWord(data, address, mem) + data -> X]);
+			data -> Z = (data -> A == 0);
+			data -> N = (data -> A & 0b10000000 > 0);
+			break;
+		case INS_EOR_AY:
+			(*address)++;
+			data -> A = (data -> A ^ (uint8_t) mem[getWord(data, address, mem) + data -> Y]);
+			data -> Z = (data -> A == 0);
+			data -> N = (data -> A & 0b10000000 > 0);
+			break;
+		case INS_EOR_IX:
+			(*address)++;
+			temp = (uint8_t) (mem[*address] + data -> X);
+			data -> A = (data -> A ^ mem[getWord(data, &temp, mem)]);
+			data -> Z = (data -> A == 0);
+			data -> N = (data -> A & 0b10000000 > 0);
+			break;
+		case INS_EOR_IY:
+			(*address)++;
+			temp = (mem[*address]) & 0b11111111;
+			data -> A = (data -> A ^ mem[(getWord(data, &temp, mem) + data -> Y) & 0b11111111]);
+			data -> Z = (data -> A == 0);
+			data -> N = (data -> A & 0b10000000 > 0);
+			break;
+		case INS_BVS_RL:
+			(*address)++;
+			if (data -> V) { 
+				if (mem[*address] & 0b10000000) 
+				{ 
+					*address -= mem[*address] & 0b01111111;
+				} 
+				else 
+				{  
+					*address += mem[*address] & 0b01111111;
+				} 
+			}
+			break;
+		case INS_BVC_RL:
+			(*address)++;
+			if (!(data -> V)) { 
+				if (mem[*address] & 0b10000000) 
+				{ 
+					*address -= mem[*address] & 0b01111111;
+				} 
+				else 
+				{  
+					*address += mem[*address] & 0b01111111;
+				} 
+			}
+			break;
+		case INS_BCS_RL:
+			(*address)++;
+			if (data -> C) { 
+				if (mem[*address] & 0b10000000) 
+				{ 
+					*address -= mem[*address] & 0b01111111;
+				} 
+				else 
+				{  
+					*address += mem[*address] & 0b01111111;
+				} 
+			}
+			break;
+		case INS_BEQ_RL:
+			(*address)++;
+			if (data -> Z) { 
+				if (mem[*address] & 0b10000000) 
+				{ 
+					*address -= mem[*address] & 0b01111111;
+				} 
+				else 
+				{  
+					*address += mem[*address] & 0b01111111;
+				} 
+			}
+			break;
+		case INS_BMI_RL:
+			(*address)++;
+			if (data -> N) { 
+				if (mem[*address] & 0b10000000) 
+				{ 
+					*address -= mem[*address] & 0b01111111;
+				} 
+				else 
+				{  
+					*address += mem[*address] & 0b01111111;
+				} 
+			}
+			break;
+		case INS_BNE_RL:
+			(*address)++;
+			if (!(data -> Z)) { 
+				if (mem[*address] & 0b10000000) 
+				{ 
+					*address -= mem[*address] & 0b01111111;
+				} 
+				else 
+				{  
+					*address += mem[*address] & 0b01111111;
+				} 
+			}
+			break;
+		case INS_BPL_RL:
+			(*address)++;
+			if (!(data -> N)) { 
+				if (mem[*address] & 0b10000000) 
+				{ 
+					*address -= mem[*address] & 0b01111111;
+				} 
+				else 
+				{  
+					*address += mem[*address] & 0b01111111;
+				} 
+			}
+			break;
+		case INS_BIT_ZP:
+			(*address)++;
+			temp = data -> A & mem[mem[*address]];
+			data -> V = (temp & 0b01000000) > 0;
+			data -> N = (temp & 0b10000000) > 0;
+			data -> Z = (temp == 0);
+			break;
+		case INS_BIT_AB:
+			(*address)++;
+			temp = data -> A & mem[getWord(data, address, mem)];
+			data -> V = (temp & 0b01000000) > 0;
+			data -> N = (temp & 0b10000000) > 0;
+			data -> Z = (temp == 0);
 			break;
 		case INS_ADC_IM:
 			(*address)++;
@@ -282,7 +634,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_ADC_IX:
 			(*address)++;
-			temp = (uint8_t) (data -> X + mem[*address]);
+			temp = (data -> X + mem[*address]) & 0b11111111;
 			output = data -> A + mem[getWord(data, &temp, mem)];
 			if (data -> C == 1) { output += 256; }
 			data -> C = (output >= 256);
@@ -297,7 +649,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 		case INS_ADC_IY:
 			(*address)++;
 			temp = mem[*address];
-			output = data -> A + mem[(uint8_t) getWord(data, &temp, mem) + data -> Y];
+			output = data -> A + mem[(getWord(data, &temp, mem) + data -> Y) & 0b11111111];
 			if (data -> C == 1) { output += 256; }
 			data -> C = (output >= 256);
 			data -> V = ((data -> A & 0b10000000) != (output & 0b10000000));
@@ -347,14 +699,86 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 		case INS_LDX_IM:
 			(*address)++;
 			data -> X = mem[*address];
+			data -> Z = (data -> X == 0);
+			data -> N = ((data -> X & 0b10000000) > 0);
+			break;
+		case INS_LDX_ZP:
+			(*address)++;
+			data -> X = mem[mem[*address]];
+			data -> Z = (data -> X == 0);
+			data -> N = ((data -> X & 0b10000000) > 0);
+			break;
+		case INS_LDX_ZY:
+			(*address)++;
+			data -> X = mem[mem[(*address + data -> Y) & 0b11111111]];
+			data -> Z = (data -> X == 0);
+			data -> N = ((data -> X & 0b10000000) > 0);
+			break;
+		case INS_LDX_AB:
+			(*address)++;
+			data -> X = mem[getWord(data, address, mem)];
+			data -> Z = (data -> X == 0);
+			data -> N = ((data -> X & 0b10000000) > 0);
+			break;
+		case INS_LDX_AY:
+			(*address)++;
+			data -> X = mem[getWord(data, address, mem) + data -> Y];
+			data -> Z = (data -> X == 0);
+			data -> N = ((data -> X & 0b10000000) > 0);
 			break;
 		case INS_LDY_IM:
 			(*address)++;
 			data -> Y = mem[*address];
+			data -> Z = (data -> Y == 0);
+			data -> N = ((data -> Y & 0b10000000) > 0);
 			break;
 		case INS_LDA_IM:
 			(*address)++;
 			data -> A = mem[*address];
+			data -> Z = (data -> A == 0);
+			data -> N = ((data -> A & 0b10000000) > 0);
+			break;
+		case INS_LDA_ZP:
+			(*address)++;
+			data -> A = mem[mem[*address]];
+			data -> Z = (data -> A == 0);
+			data -> N = ((data -> A & 0b10000000) > 0);
+			break;
+		case INS_LDA_ZX:
+			(*address)++;
+			data -> A = mem[(mem[*address] + data -> X) & 0b11111111];
+			data -> Z = (data -> A == 0);
+			data -> N = ((data -> A & 0b10000000) > 0);
+			break;
+		case INS_LDA_AB:
+			(*address)++;
+			data -> A = mem[getWord(data, address, mem)];
+			data -> Z = (data -> A == 0);
+			data -> N = ((data -> A & 0b10000000) > 0);
+			break;
+		case INS_LDA_AX:
+			(*address)++;
+			data -> A = mem[getWord(data, address, mem) + data -> X];
+			data -> Z = (data -> A == 0);
+			data -> N = ((data -> A & 0b10000000) > 0);
+			break;
+		case INS_LDA_AY:
+			(*address)++;
+			data -> A = mem[getWord(data, address, mem) + data -> Y];
+			data -> Z = (data -> A == 0);
+			data -> N = ((data -> A & 0b10000000) > 0);
+			break;
+		case INS_LDA_IX:
+			(*address)++;
+			data -> A = mem[mem[*address + data -> X]];
+			data -> Z = (data -> A == 0);
+			data -> N = ((data -> A & 0b10000000) > 0);
+			break;
+		case INS_LDA_IY:
+			(*address)++;
+			data -> A = mem[(mem[*address] + data -> Y) & 0b11111111];
+			data -> Z = (data -> A == 0);
+			data -> N = ((data -> A & 0b10000000) > 0);
 			break;
 		case INS_CLD_IP:
 			data -> D = 0;
