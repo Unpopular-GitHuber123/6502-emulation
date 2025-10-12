@@ -1,4 +1,7 @@
-#include "cpu6502.c"
+#include <cpu6502.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdint.h>
 
 void loadProg(uint8_t* mem);
 
