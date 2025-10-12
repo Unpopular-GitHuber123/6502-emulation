@@ -150,6 +150,164 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 		case INS_BRK_IP:
 			data -> clk = 0;
 			break;
+		case INS_AND_IM:
+			(*address)++;
+			data -> A = (data -> A & mem[*address]);
+			data -> Z = (data -> A == 0);
+			data -> N = (data -> A & 0b10000000 > 0);
+			break;
+		case INS_AND_ZP:
+			(*address)++;
+			data -> A = (data -> A & mem[mem[*address]]);
+			data -> Z = (data -> A == 0);
+			data -> N = (data -> A & 0b10000000 > 0);
+			break;
+		case INS_AND_ZX:
+			(*address)++;
+			data -> A = (data -> A & (uint8_t) (mem[mem[*address] + data -> X]));
+			data -> Z = (data -> A == 0);
+			data -> N = (data -> A & 0b10000000 > 0);
+			break;
+		case INS_AND_AB:
+			(*address)++;
+			data -> A = (data -> A & (uint8_t) mem[getWord(data, address, mem)]);
+			data -> Z = (data -> A == 0);
+			data -> N = (data -> A & 0b10000000 > 0);
+			break;
+		case INS_AND_AX:
+			(*address)++;
+			data -> A = (data -> A & (uint8_t) mem[getWord(data, address, mem) + data -> X]);
+			data -> Z = (data -> A == 0);
+			data -> N = (data -> A & 0b10000000 > 0);
+			break;
+		case INS_AND_AY:
+			(*address)++;
+			data -> A = (data -> A & (uint8_t) mem[getWord(data, address, mem) + data -> Y]);
+			data -> Z = (data -> A == 0);
+			data -> N = (data -> A & 0b10000000 > 0);
+			break;
+		case INS_AND_IX:
+			(*address)++;
+			uint16_t temp = (uint8_t) (mem[*address] + data -> X);
+			data -> A = (data -> A & mem[getWord(data, &temp, mem)]);
+			data -> Z = (data -> A == 0);
+			data -> N = (data -> A & 0b10000000 > 0);
+			break;
+		case INS_AND_IY:
+			(*address)++;
+			temp = (uint8_t) (mem[*address] + data -> Y);
+			data -> A = (data -> A & mem[getWord(data, &temp, mem)]);
+			data -> Z = (data -> A == 0);
+			data -> N = (data -> A & 0b10000000 > 0);
+			break;
+		case INS_ADC_IM:
+			(*address)++;
+			uint16_t output = data -> A + mem[*address];
+			if (data -> C == 1) { output += 256; }
+			data -> C = (output >= 256);
+			data -> V = ((data -> A & 0b10000000) != (output & 0b10000000));
+			data -> A = output;
+			data -> N = (data -> A & 0b10000000 > 1);
+			data -> Z = (data -> A == 0);
+			if (testing_mode > 1) {
+				printf("accumulator: %02x\n", data -> A);
+			}
+			break;
+		case INS_ADC_ZP:
+			(*address)++;
+			output = data -> A + mem[mem[*address]];
+			if (data -> C == 1) { output += 256; }
+			data -> C = (output >= 256);
+			data -> V = ((data -> A & 0b10000000) != (output & 0b10000000));
+			data -> A = output;
+			data -> N = (data -> A & 0b10000000 > 1);
+			data -> Z = (data -> A == 0);
+			if (testing_mode > 1) {
+				printf("accumulator: %02x\n", data -> A);
+			}
+			break;
+		case INS_ADC_ZX:
+			(*address)++;
+			output = data -> A + (uint8_t) (mem[mem[*address] + data -> X]);
+			if (data -> C == 1) { output += 256; }
+			data -> C = (output >= 256);
+			data -> V = ((data -> A & 0b10000000) != (output & 0b10000000));
+			data -> A = output;
+			data -> N = (data -> A & 0b10000000 > 1);
+			data -> Z = (data -> A == 0);
+			if (testing_mode > 1) {
+				printf("accumulator: %02x\n", data -> A);
+			}
+			break;
+		case INS_ADC_AB:
+			(*address)++;
+			output = data -> A + mem[getWord(data, address, mem)];
+			if (data -> C == 1) { output += 256; }
+			data -> C = (output >= 256);
+			data -> V = ((data -> A & 0b10000000) != (output & 0b10000000));
+			data -> A = output;
+			data -> N = (data -> A & 0b10000000 > 1);
+			data -> Z = (data -> A == 0);
+			if (testing_mode > 1) {
+				printf("accumulator: %02x\n", data -> A);
+			}
+			break;
+		case INS_ADC_AX:
+			(*address)++;
+			uint16_t tempAdr = (*address) + data -> X;
+			output = data -> A + mem[getWord(data, &tempAdr, mem)];
+			if (data -> C == 1) { output += 256; }
+			data -> C = (output >= 256);
+			data -> V = ((data -> A & 0b10000000) != (output & 0b10000000));
+			data -> A = output;
+			data -> N = (data -> A & 0b10000000 > 1);
+			data -> Z = (data -> A == 0);
+			if (testing_mode > 1) {
+				printf("accumulator: %02x\n", data -> A);
+			}
+			break;
+		case INS_ADC_AY:
+			(*address)++;
+			tempAdr = (*address) + data -> Y;
+			output = data -> A + mem[getWord(data, &tempAdr, mem)];
+			if (data -> C == 1) { output += 256; }
+			data -> C = (output >= 256);
+			data -> V = ((data -> A & 0b10000000) != (output & 0b10000000));
+			data -> A = output;
+			data -> N = (data -> A & 0b10000000 > 1);
+			data -> Z = (data -> A == 0);
+			if (testing_mode > 1) {
+				printf("accumulator: %02x\n", data -> A);
+			}
+			break;
+		case INS_ADC_IX:
+			(*address)++;
+			temp = (uint8_t) (data -> X + mem[*address]);
+			output = data -> A + mem[getWord(data, &temp, mem)];
+			if (data -> C == 1) { output += 256; }
+			data -> C = (output >= 256);
+			data -> V = ((data -> A & 0b10000000) != (output & 0b10000000));
+			data -> A = output;
+			data -> N = (data -> A & 0b10000000 > 1);
+			data -> Z = (data -> A == 0);
+			if (testing_mode > 1) {
+				printf("accumulator: %02x\n", data -> A);
+			}
+			break;
+		case INS_ADC_IY:
+			(*address)++;
+			temp = mem[*address];
+			output = data -> A + mem[(uint8_t) getWord(data, &temp, mem) + data -> Y];
+			if (data -> C == 1) { output += 256; }
+			data -> C = (output >= 256);
+			data -> V = ((data -> A & 0b10000000) != (output & 0b10000000));
+			data -> A = output;
+			data -> N = (data -> A & 0b10000000 > 1);
+			data -> Z = (data -> A == 0);
+			if (testing_mode > 1) {
+				printf("accumulator: %02x\n", data -> A);
+			}
+			break;
 		case INS_JMP_AB:
 			(*address)++;
 			*address = getWord(data, address, mem) - 1;
@@ -186,6 +344,18 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 				printf("Address returned to: %04x\n", *address + 1);
 			}
 			break;
+		case INS_LDX_IM:
+			(*address)++;
+			data -> X = mem[*address];
+			break;
+		case INS_LDY_IM:
+			(*address)++;
+			data -> Y = mem[*address];
+			break;
+		case INS_LDA_IM:
+			(*address)++;
+			data -> A = mem[*address];
+			break;
 		case INS_CLD_IP:
 			data -> D = 0;
 			break;
@@ -213,12 +383,12 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			printf("Unrecognised instruction at address: %04x\n", *address);
 	}
 	if (testing_mode > 3) {
-		printf("PS: %02x\n", getPS(*data));
+		printf("C: %d Z: %d I: %d D: %d B: %d clk: %d V: %d N: %d\n", data -> C, data -> Z, data -> I, data -> D, data -> B, data -> clk, data -> V, data -> N);
 		printf("PC: %04x\n", data -> PC);
-		printf("A: %d\n", data -> A);
-		printf("X: %d\n", data -> X);
-		printf("Y: %d\n", data -> Y);
-		printf("SP: %d\n", data -> SP);
+		printf("A: %02x\n", data -> A);
+		printf("X: %02x\n", data -> X);
+		printf("Y: %02x\n", data -> Y);
+		printf("SP: %02x\n", data -> SP);
 	}
 	if (testing_mode > 0) {
 		printf("\n");

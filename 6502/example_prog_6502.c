@@ -46,26 +46,32 @@ int main() {
 }
 
 void loadProg(uint8_t *mem) {
-    /* 
+ 	/*
 	JMP + Reset start address (this normally wouldn't contain a jump command, 
 	and only a vector, but it's easier this way)
 	*/
 
 	mem[0xFFFC] = INS_JMP_AB;
 	mem[0xFFFD] = 0x00;
-	mem[0xFFFE] = 0x80;
+	mem[0xFFFE] = 0xFF;
 
-	mem[0x8000] = INS_JSR_AB;
-	mem[0x8001] = 0x50;
-	mem[0x8002] = 0x80;
-	mem[0x8003] = INS_BRK_IP;
+	mem[0x8000] = INS_ADC_IM;
+	mem[0x8001] = 0xFF;
+	mem[0x8002] = INS_ADC_IM;
+	mem[0x8003] = 0x02;
+	mem[0x8004] = INS_ADC_IM;
+	mem[0x8005] = 0x50;
+	mem[0x8006] = INS_AND_IM;
+	mem[0x8007] = 0x43;
+	mem[0x8008] = INS_ADC_IM;
+	mem[0x8009] = 0x50;
+	mem[0x800A] = INS_ADC_IM;
+	mem[0x800B] = 0x50;
+	mem[0x800C] = INS_ADC_IM;
+	mem[0x800D] = 0x50;
 
-	mem[0x8050] = INS_SED_IP;
-	mem[0x8051] = INS_RTS_IP;
+	mem[0x8008] = INS_BRK_IP;
 
-	/*mem[0xFFFD] = INS_JMP_AB;
-	mem[0xFFFE] = 0x00;
-	mem[0xFFFF] = 0xFF;
 
 	// Custom reset code
 	mem[0xFF00] = INS_LDX_IM;
@@ -80,8 +86,9 @@ void loadProg(uint8_t *mem) {
 	mem[0xFF09] = INS_CLV_IP;
 	mem[0xFF0A] = INS_JMP_AB;
 	mem[0xFF0B] = 0x00;
-	mem[0xFF0C] = 0x56;
+	mem[0xFF0C] = 0x80;
 
+	/*
 	// Program
 	mem[0x5600] = INS_LDA_IM;
 	mem[0x5601] = 0x50;
@@ -105,7 +112,6 @@ void loadProg(uint8_t *mem) {
 	mem[0x565B] = IO_RANGE[1];
 	mem[0x565C] = (IO_RANGE[1] >> 8);
 	mem[0x565D] = INS_RTS_IP;*/
-
 	// Note: I'm not good at programming in assembly so this is probably horribly unoptimised
 	
 	return;
