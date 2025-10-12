@@ -144,13 +144,14 @@ uint8_t* initialise_mem(struct data data, uint8_t* mem) {
 	return mem;
 }
 
-struct data reset(struct data data) {
-	data.clk = 1;
-	data.PC = 0xFFFC;
-	data.cyclenum = 0;
-	data.exit_code = 0;
+void reset(struct data *data, uint8_t *mem) {
+	data -> clk = 1;
+	uint16_t temp = 0xFFFC;
+	data -> PC = getWord(data, &temp, mem);
+	data -> cyclenum = 0;
+	data -> exit_code = 0;
 
-	return data;
+	return;
 }
 
 uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t testing_mode) {

@@ -27,16 +27,19 @@ int main() {
 	// Make the memory
 	uint8_t mem[MAX_MEM];
 
-	/* 
-	Initialise the memory (zero the drive) and data 
-	(Setting the clock cycles to 0, activating it, etc)
-	*/
-	data = reset(data);
-	initialise_mem(data, mem);
-
-	// This is just so the program is out of the way and it's easier to navigate main
+	// This is just so the program is out of the way and it's easier to navigate main.
 	loadProg(mem);
 
+	/* 
+	Initialise the memory (zero the drive) and data (Setting the clock cycles to 
+	0, activating it, etc). Note: It is important to load the program before resetting 
+	data, as it will look for a vector at 0xFFFC and 0xFFFD.
+	*/
+	initialise_mem(data, mem);
+	reset(&data, mem);
+
+	printf("===============================START===============================\n");
+	// Execute the program
 	while (data.clk == 1) {
 		execute(&data, mem, &data.PC, testing_mode);
 	}
@@ -49,32 +52,16 @@ int main() {
 }
 
 void loadProg(uint8_t *mem) {
- 	/*
-	JMP + Reset start address (this normally wouldn't contain a jump command, 
-	and only a vector, but it's easier this way)
-	*/
+ 	
+	// This is a vector to the reset function.
 
-	mem[0xFFFC] = INS_JMP_AB;
-	mem[0xFFFD] = 0x00;
-	mem[0xFFFE] = 0xFF;
+	mem[0xFFFC] = 0x00;
+	mem[0xFFFD] = 0xFF;
+	
+	// Note: 0xFFFE and 0xFFFF are used for the interrupt vector.
 
-	mem[0x8000] = INS_ADC_IM;
-	mem[0x8001] = 0xFF;
-	mem[0x8002] = INS_ADC_IM;
-	mem[0x8003] = 0x02;
-	mem[0x8004] = INS_ADC_IM;
-	mem[0x8005] = 0x50;
-	mem[0x8006] = INS_AND_IM;
-	mem[0x8007] = 0x43;
-	mem[0x8008] = INS_ADC_IM;
-	mem[0x8009] = 0x50;
-	mem[0x800A] = INS_ADC_IM;
-	mem[0x800B] = 0x50;
-	mem[0x800C] = INS_ADC_IM;
-	mem[0x800D] = 0x50;
-
-	mem[0x8008] = INS_BRK_IP;
-
+	// Turn it off after resetting.
+	mem[0x8000] = MTA_OFF_IP;
 
 	// Custom reset code
 	mem[0xFF00] = INS_LDX_IM;

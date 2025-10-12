@@ -1,6 +1,6 @@
 // Opcodes:
 
-// IMPLEMENTED:
+// All are untested except ones that specify otherwise
 
 // System control
 #define INS_BRK_IP 0x00
