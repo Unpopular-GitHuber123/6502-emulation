@@ -24,8 +24,8 @@ Helpful video: https://www.youtube.com/watch?v=qJgsuQoy9bc
 const uint16_t MAX_MEM = 0xFFFF;
 const uint16_t ZPAGE_RANGE[2] = {0x0000, 0x00FF};
 const uint16_t STACK_RANGE[2] = {0x0100, 0x01FF};
-const uint16_t RAM_RANGE[2] = {0x0200, 0x7FFF};
-const uint16_t ROM_RANGE[2] = {0x8000, 0xFFFF};
+const uint16_t RAM_RANGE[2] = {0x0200, 0x5FFF};
+const uint16_t ROM_RANGE[2] = {0x6000, 0xFFFF};
 const uint16_t SYSMEM_RANGE[2] = {0xFF00, 0xFFFF};
 
 struct data {

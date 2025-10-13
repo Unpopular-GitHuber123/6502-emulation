@@ -6,12 +6,12 @@
 void loadProg(uint8_t* mem);
 
 /*
-Custom input output range (Inside the RAM range). Address 55FF is "wired up" 
-to the screen's on/off signal (1 on, 0 off). Address 55FE are "wired up" 
+Custom input output range (Inside the RAM range). Address 7FFF is "wired up" 
+to the screen's on/off signal (1 on, 0 off). Address 7FFE is "wired up" 
 to the pointer to the byte to display. (Add the value to the starting address
 of the IO range.)
 */
-const uint16_t IO_RANGE[2] = {0x5500, 0x55FF};
+const uint16_t IO_RANGE[2] = {0x7000, 0x7FFF};
 
 int main() {
 	// Set the testing mode: 0 is no debug info, 1 is some (e.g printing the address), 
@@ -38,15 +38,30 @@ int main() {
 	initialise_mem(data, mem);
 	reset(&data, mem);
 
-	printf("===============================START===============================\n");
 	// Execute the program
+	int alreadyPrinted = 0;
+	int nextFree = 0;
+	char string[IO_RANGE[1] - IO_RANGE[0]];
 	while (data.clk == 1) {
 		execute(&data, mem, &data.PC, testing_mode);
+		// Custom screen component
+		if (mem[IO_RANGE[1]]) {
+			if (alreadyPrinted == 0) {
+				string[nextFree] = mem[IO_RANGE[1] - 1];
+				nextFree++;
+			}
+			alreadyPrinted = 1;
+		} else {
+			alreadyPrinted = 0;
+		}
 	}
 
 	// Print some debug info
 	printf("Clock cycles: %d\n", data.cyclenum);
 	printf("Final address: %04x\n", (data.PC - 1) & 0xFFFF);
+
+	// Output onto the terminal
+	printf("TERMINAL OUTPUT:\n%s", string);
 
 	return data.exit_code;
 }
@@ -60,8 +75,41 @@ void loadProg(uint8_t *mem) {
 	
 	// Note: 0xFFFE and 0xFFFF are used for the interrupt vector.
 
-	// Turn it off after resetting.
-	mem[0x8000] = MTA_OFF_IP;
+	// Print 67\n then turn it off
+	
+	mem[0x6000] = INS_LDX_IM;
+	mem[0x6001] = 0x36;
+	mem[0x6002] = INS_JSR_AB;
+	mem[0x6003] = 0xF0;
+	mem[0x6004] = 0x80;
+	mem[0x6005] = INS_LDX_IM;
+	mem[0x6006] = 0x37;
+	mem[0x6007] = INS_JSR_AB;
+	mem[0x6008] = 0xF0;
+	mem[0x6009] = 0x80;
+	mem[0x600A] = INS_LDX_IM;
+	mem[0x600B] = 0x0A;
+	mem[0x600C] = INS_JSR_AB;
+	mem[0x600D] = 0xF0;
+	mem[0x600E] = 0x80;
+	mem[0x600F] = MTA_OFF_IP;
+
+	// Print subroutine
+	mem[0x60F0] = INS_TXA_IP;
+	mem[0x60F1] = INS_STA_AB;
+	mem[0x60F2] = 0xFE;
+	mem[0x60F3] = 0x7F;
+	mem[0x60F4] = INS_LDA_IM;
+	mem[0x60F5] = 0x01;
+	mem[0x60F6] = INS_STA_AB;
+	mem[0x60F7] = 0xFF;
+	mem[0x60F8] = 0x7F;
+	mem[0x60F9] = INS_LDA_IM;
+	mem[0x60FA] = 0x00;
+	mem[0x60FB] = INS_STA_AB;
+	mem[0x60FC] = 0xFF;
+	mem[0x60FD] = 0x7F;
+	mem[0x60FE] = INS_RTS_IP;
 
 	// Custom reset code
 	mem[0xFF00] = INS_LDX_IM;
@@ -76,33 +124,9 @@ void loadProg(uint8_t *mem) {
 	mem[0xFF09] = INS_CLV_IP;
 	mem[0xFF0A] = INS_JMP_AB;
 	mem[0xFF0B] = 0x00;
-	mem[0xFF0C] = 0x80;
+	mem[0xFF0C] = 0x60;
 
-	/*
-	// Program
-	mem[0x5600] = INS_LDA_IM;
-	mem[0x5601] = 0x50;
-	mem[0x5602] = INS_JSR_AB;
-	mem[0x5603] = 0x50;
-	mem[0x5604] = 0x56;
-	mem[0x5605] = INS_BRK_IP;
-	
-	// Subroutine example (prints a character)
-	mem[0x5650] = INS_STA_AB;
-	mem[0x5651] = ((IO_RANGE[1] - 1) & 0b00001111);
-	mem[0x5652] = ((IO_RANGE[1] - 1) >> 8);
-	mem[0x5653] = INS_LDX_IM;
-	mem[0x5654] = 0x01;
-	mem[0x5655] = INS_STX_AB;
-	mem[0x5656] = IO_RANGE[1] & 0b00001111;
-	mem[0x5657] = (IO_RANGE[1] >> 8);
-	mem[0x5658] = INS_LDX_IM;
-	mem[0x5659] = 0x00;
-	mem[0x565A] = INS_STX_AB;
-	mem[0x565B] = IO_RANGE[1];
-	mem[0x565C] = (IO_RANGE[1] >> 8);
-	mem[0x565D] = INS_RTS_IP;*/
-	// Note: I'm not good at programming in assembly so this is probably horribly unoptimised
-	
+
+
 	return;
 }
