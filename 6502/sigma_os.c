@@ -31,16 +31,16 @@ int main() {
 	// This is just so the program is out of the way and it's easier to navigate main.
 	FILE *fptr;
 
-	fptr = fopen("6502/prog.txt", "r");
+	fptr = fopen("prog.txt", "r");
 
 	if (fptr == NULL) {
 		perror("AHHH ABORT ABORT FAILED TO OPEN FILE!!! AH!!!!");
 		return 1;
 	}
 
-	fclose(fptr);
-
 	loadProgFromFile(data, mem, fptr);
+
+	fclose(fptr);
 
 	/* 
 	Initialise the memory (zero the drive) and data (Setting the clock cycles to 
@@ -81,11 +81,14 @@ int main() {
         if (testing_mode > 0) {
 			printf("\n");
 		}
+		if (data.cyclenum > 50) {
+			break;
+		}
 	}
 
 	// Print some debug info
 	printf("Clock cycles: %d\n", data.cyclenum);
-	printf("Final address: %06x\n", (data.PC - 1) & 0xFFFF);
+	printf("Final address: %06x\n", (data.PC - 1) & 0xFFFFFF);
 
 	// Output onto the terminal
 	printf("TERMINAL OUTPUT:\n");

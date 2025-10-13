@@ -155,57 +155,56 @@ uint8_t* initialise_mem(struct data data, uint8_t* mem) {
 uint32_t hexToDec(char *string, int len) {
 	uint32_t val = 0;
 
-	while (len > 1) {
-		switch (string[len]) {
+	for (int idx = 0; idx < len; idx++) { // yes I know this could be a for loop but idc
+		switch (string[idx]) {
 			case '1':
-				val += pow(16, len);
+				val += pow(16, len - idx);
 				break;
 			case '2':
-				val += pow(16, len) * 2;
+				val += pow(16, len - idx) * 2;
 				break;
 			case '3':
-				val += pow(16, len) * 3;
+				val += pow(16, len - idx) * 3;
 				break;
 			case '4':
-				val += pow(16, len) * 4;
+				val += pow(16, len - idx) * 4;
 				break;
 			case '5':
-				val += pow(16, len) * 5;
+				val += pow(16, len - idx) * 5;
 				break;
 			case '6':
-				val += pow(16, len) * 6;
+				val += pow(16, len - idx) * 6;
 				break;
 			case '7':
-				val += pow(16, len) * 7;
+				val += pow(16, len - idx) * 7;
 				break;
 			case '8':
-				val += pow(16, len) * 8;
+				val += pow(16, len - idx) * 8;
 				break;
 			case '9':
-				val += pow(16, len) * 9;
+				val += pow(16, len - idx) * 9;
 				break;
 			case 'A':
-				val += pow(16, len) * 10;
+				val += pow(16, len - idx) * 10;
 				break;
 			case 'B':
-				val += pow(16, len) * 11;
+				val += pow(16, len - idx) * 11;
 				break;
 			case 'C':
-				val += pow(16, len) * 12;
+				val += pow(16, len - idx) * 12;
 				break;
 			case 'D':
-				val += pow(16, len) * 13;
+				val += pow(16, len - idx) * 13;
 				break;
 			case 'E':
-				val += pow(16, len) * 14;
+				val += pow(16, len - idx) * 14;
 				break;
 			case 'F':
-				val += pow(16, len) * 15;
+				val += pow(16, len - idx) * 15;
 				break;
 			default:
 				break;
 		}
-		len--;
 	}
 	switch (string[len]) {
 		case '1':
@@ -257,6 +256,8 @@ uint32_t hexToDec(char *string, int len) {
 			break;
 		}
 
+		// yeah I know there are better ways to do this but I'm lazy
+
 	return val;
 }
 
@@ -267,28 +268,28 @@ void loadProgFromFile(struct data data, uint8_t* mem, FILE *fp) {
 	char c;
 	while (fgets(line, 50, fp)) {
 		uint8_t lineAdr = 0;
-		while (c != '\n' && c != ';') {
-			c = line[lineAdr];
-			char tok[50];
-			if (c == 'm') {
-				while (c != ';' && c != '\n') {
-					lineAdr++;
-					c = line[lineAdr];
-					if (c != ';' && c != '\n') {
-						tok[lineAdr - 1] = c;
-					}
+		c = line[lineAdr];
+		char tok[50];
+		if (c == 'm') {
+			while (c != ';' && c != '\n') {
+				c = line[lineAdr];
+				if (c != ';' && c != '\n') {
+					tok[lineAdr] = c;
 				}
-				address = hexToDec(tok, lineAdr - 1);
-			} else {
-				while (c != ';' && c != '\n') {
-					lineAdr++;
-					c = line[lineAdr];
-					if (c != ';' && c != '\n') {
-						tok[lineAdr - 1] = c;
-					}
-				}
-				mem[address] = hexToDec(tok, lineAdr - 1);
+				lineAdr++;
 			}
+			address = hexToDec(tok, lineAdr - 2);
+		} else {
+			while (c != ';' && c != '\n') {
+				c = line[lineAdr];
+				if (c != ';' && c != '\n') {
+					tok[lineAdr] = c;
+				}
+				lineAdr++;
+			}
+			mem[address] = hexToDec(tok, lineAdr - 2);
+			printf("val: %02x at: %06x\n", mem[address], address);
+			address++;
 		}
 	}
 

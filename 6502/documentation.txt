@@ -1,0 +1,8 @@
+Opcodes: http://www.6502.org/users/obelisk/index.html (go to "references")
+
+In "prog.txt" you can do two things. Change the memory address, and change what is at that address. 
+
+All values are in hex.
+To change the memory address, type 'm' and then the address in hex.
+To change the value at the address, type the value. It will automatically update the address in the next line.
+End each line with a semicolon. You can also add comments after a semicolon.
