@@ -1,14 +1,16 @@
 /*******************************************************
 
 This emulation is similar to the MOS 6502 processor.
-It is not a 1:1 emulation, especially during the boot
-sequence, but it is close-ish.
+It is not a 1:1 emulation, especially with the specs, 
+but it is close. It has almost 1:1 accuracy with the
+opcodes, with only 2 custom ones.
 
-Also I gave it a 24 bit address bus because I wanna write 
-an OS in it!!! (I've never written one before lmao)
+Also I gave it a 24 bit address bus and 12 bit stack 
+pointer because I wanna write an OS in it!!! (I've
+never written one before lmao)
 
-It has a maximum addressable memory of 64 KB, including
-RAM, ROM, and a stack. These would be external
+It has a maximum addressable memory of 16 MB, including
+RAM, programmable ROM, and a stack. These would be external
 components in an actual physical circuit.
 
 Credits:
@@ -18,17 +20,20 @@ Helpful video: https://www.youtube.com/watch?v=qJgsuQoy9bc
 
 *******************************************************/
 
+#include <math.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include "instruction_set.c"
 
 // Memory (Change the ranges as you want but be prepared for seg faults and unexpected behaviour):
 const uint32_t MAX_MEM = 0xFFFFFF;
 const uint32_t ZPAGE_RANGE[2] = {0x000000, 0x0000FF};
-const uint32_t STACK_RANGE[2] = {0x000100, 0x0001FF};
-const uint32_t RAM_RANGE[2] = {0x000200, 0x3FFFFF};
-const uint32_t ROM_RANGE[2] = {0x600000, 0xFFFFFF};
+const uint32_t STACK_RANGE[2] = {0x000100, 0x0010FF};
+const uint32_t RAM_RANGE[2] = {0x001100, 0x3FFFFF};
+const uint32_t ROM_RANGE[2] = {0x400000, 0xFFFFFF};
 const uint32_t SYSMEM_RANGE[2] = {0xFFF000, 0xFFFFFF};
 
 struct data {
@@ -42,7 +47,7 @@ struct data {
 	uint8_t N : 1; // Negative flag
 
 	uint32_t PC; // Program counter
-	uint8_t SP; // Stack pointer
+	uint16_t SP; // Stack pointer
     
     uint8_t exit_code;
 	uint8_t A, X, Y; // Accumulator, X, Y
@@ -98,6 +103,10 @@ void stackPush(struct data *data, uint8_t *mem, uint8_t val, uint8_t testing_mod
 
 	data -> SP--;
 
+	if (data -> SP >= STACK_RANGE[1]) {
+		data -> SP = STACK_RANGE[1];
+	}
+
 	if (testing_mode > 2) {
 		printf("Value pushed to stack: %02x\n", val);
 	}
@@ -107,6 +116,11 @@ void stackPush(struct data *data, uint8_t *mem, uint8_t val, uint8_t testing_mod
 
 uint8_t stackPop(struct data *data, uint8_t *mem, uint8_t testing_mode) {
 	data -> SP++;
+
+	if (data -> SP >= STACK_RANGE[1]) {
+		data -> SP = STACK_RANGE[1];
+	}
+
 	uint8_t toReturn = mem[data -> SP + STACK_RANGE[0]];
 
 	if (testing_mode > 2) {
@@ -118,13 +132,6 @@ uint8_t stackPop(struct data *data, uint8_t *mem, uint8_t testing_mode) {
 
 void storeMem(uint8_t *mem, uint32_t address, uint8_t value, struct data *data) {
 	mem[address] = value;
-	return;
-}
-
-void setFlagsLDA(struct data *data, uint8_t val) {
-	data -> A = val;
-	data -> Z = (data -> A == 0);
-	data -> N = (data -> A & 0b10000000) > 0;
 	return;
 }
 
@@ -143,6 +150,149 @@ uint8_t* initialise_mem(struct data data, uint8_t* mem) {
 	}
 
 	return mem;
+}
+
+uint32_t hexToDec(char *string, int len) {
+	uint32_t val = 0;
+
+	while (len > 1) {
+		switch (string[len]) {
+			case '1':
+				val += pow(16, len);
+				break;
+			case '2':
+				val += pow(16, len) * 2;
+				break;
+			case '3':
+				val += pow(16, len) * 3;
+				break;
+			case '4':
+				val += pow(16, len) * 4;
+				break;
+			case '5':
+				val += pow(16, len) * 5;
+				break;
+			case '6':
+				val += pow(16, len) * 6;
+				break;
+			case '7':
+				val += pow(16, len) * 7;
+				break;
+			case '8':
+				val += pow(16, len) * 8;
+				break;
+			case '9':
+				val += pow(16, len) * 9;
+				break;
+			case 'A':
+				val += pow(16, len) * 10;
+				break;
+			case 'B':
+				val += pow(16, len) * 11;
+				break;
+			case 'C':
+				val += pow(16, len) * 12;
+				break;
+			case 'D':
+				val += pow(16, len) * 13;
+				break;
+			case 'E':
+				val += pow(16, len) * 14;
+				break;
+			case 'F':
+				val += pow(16, len) * 15;
+				break;
+			default:
+				break;
+		}
+		len--;
+	}
+	switch (string[len]) {
+		case '1':
+			val += 1;
+			break;
+		case '2':
+			val += 2;
+			break;
+		case '3':
+			val += 3;
+			break;
+		case '4':
+			val += 4;
+			break;
+		case '5':
+			val += 5;
+			break;
+		case '6':
+			val += 6;
+			break;
+		case '7':
+			val += 7;
+			break;
+		case '8':
+			val += 8;
+			break;
+		case '9':
+			val += 9;
+			break;
+		case 'A':
+			val += 10;
+			break;
+		case 'B':
+			val += 11;
+			break;
+		case 'C':
+			val += 12;
+			break;
+		case 'D':
+			val += 13;
+			break;
+		case 'E':
+			val += 14;
+			break;
+		case 'F':
+			val += 15;
+			break;
+		default:
+			break;
+		}
+
+	return val;
+}
+
+void loadProgFromFile(struct data data, uint8_t* mem, FILE *fp) {
+	uint32_t address = 0x000000;
+	
+	char line[50];
+	char c;
+	while (fgets(line, 50, fp)) {
+		uint8_t lineAdr = 0;
+		while (c != '\n' && c != ';') {
+			c = line[lineAdr];
+			char tok[50];
+			if (c == 'm') {
+				while (c != ';' && c != '\n') {
+					lineAdr++;
+					c = line[lineAdr];
+					if (c != ';' && c != '\n') {
+						tok[lineAdr - 1] = c;
+					}
+				}
+				address = hexToDec(tok, lineAdr - 1);
+			} else {
+				while (c != ';' && c != '\n') {
+					lineAdr++;
+					c = line[lineAdr];
+					if (c != ';' && c != '\n') {
+						tok[lineAdr - 1] = c;
+					}
+				}
+				mem[address] = hexToDec(tok, lineAdr - 1);
+			}
+		}
+	}
+
+	return;
 }
 
 void reset(struct data *data, uint8_t *mem) {
@@ -167,7 +317,7 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 			break;
 		case MTA_KYB_IP:
 			scanf("%s", keyboard_addr);
-			data -> cyclenum += 255;
+			data -> cyclenum += 10;
 			break;
 		case INS_BRK_IP:
 			uint32_t temp = 0xFFFFFD;

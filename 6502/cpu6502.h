@@ -24,6 +24,10 @@ uint8_t getPS(struct data data);
 
 void setPS(struct data *data, uint8_t PS);
 
+uint32_t hexToDec(char *string, int len);
+
+void loadProgFromFile(struct data data, uint8_t* mem, FILE *fp);
+
 void stackPush(struct data *data, uint8_t *mem, uint8_t val, uint8_t testing_mode);
 
 uint8_t stackPop(struct data *data, uint8_t *mem, uint8_t testing_mode);

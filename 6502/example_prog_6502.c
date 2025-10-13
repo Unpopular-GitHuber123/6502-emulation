@@ -69,9 +69,6 @@ int main() {
         if (testing_mode > 0) {
 			printf("\n");
 		}
-        if (data.cyclenum > 10) {
-            break;
-        }
 	}
 
 	// Print some debug info

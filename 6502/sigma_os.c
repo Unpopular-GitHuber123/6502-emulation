@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <errno.h>
 
 void loadProg(uint8_t* mem);
 
@@ -28,7 +29,18 @@ int main() {
 	uint8_t *mem = (uint8_t*) malloc(1024 * 1024 * 16); // 16 megs wow!
 
 	// This is just so the program is out of the way and it's easier to navigate main.
-	loadProg(mem);
+	FILE *fptr;
+
+	fptr = fopen("6502/prog.txt", "r");
+
+	if (fptr == NULL) {
+		perror("AHHH ABORT ABORT FAILED TO OPEN FILE!!! AH!!!!");
+		return 1;
+	}
+
+	fclose(fptr);
+
+	loadProgFromFile(data, mem, fptr);
 
 	/* 
 	Initialise the memory (zero the drive) and data (Setting the clock cycles to 
@@ -61,7 +73,7 @@ int main() {
                 printf("Addr cleared: %06x\n", data.PC);
             }
 		}
-        if (testing_mode > 3) 
+        if (testing_mode > 3)
         {
             printf("on: %02x\n", mem[IO_RANGE[1]]);
             printf("char: %02x\n", mem[IO_RANGE[1] - 1]);
@@ -69,9 +81,6 @@ int main() {
         if (testing_mode > 0) {
 			printf("\n");
 		}
-        if (data.cyclenum > 10) {
-            break;
-        }
 	}
 
 	// Print some debug info
