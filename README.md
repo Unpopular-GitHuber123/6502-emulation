@@ -6,4 +6,6 @@ The documentation for each one can be found linked or as its own file in each fo
 
 Look at the example program in each folder for information on how to set up the file (once installed and included) and write a program.
 
+As for the license, I'm pretty sure the MIT one means do whatever you want so use that license ig
+
 I'm ass at writing readmes so this is all you get k thx bye

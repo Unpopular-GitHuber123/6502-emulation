@@ -28,12 +28,12 @@ void stackPush(struct data *data, uint8_t *mem, uint8_t val, uint8_t testing_mod
 
 uint8_t stackPop(struct data *data, uint8_t *mem, uint8_t testing_mode);
 
-void storeMem(uint8_t *mem, uint16_t address, uint8_t value, struct data *data);
+void storeMem(uint8_t *mem, uint32_t address, uint8_t value, struct data *data);
 
-uint16_t getWord(struct data *data, uint16_t *address, uint8_t *mem);
+uint32_t getAddr(struct data *data, uint32_t *address, uint8_t *mem);
 
 uint8_t* initialise_mem(struct data data, uint8_t* mem);
 
 void reset(struct data *data, uint8_t *mem);
 
-uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t testing_mode, uint8_t *keyboard_addr);
+void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing_mode, uint8_t *keyboard_addr);

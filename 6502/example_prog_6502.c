@@ -11,7 +11,7 @@ to the screen's on/off signal (1 on, 0 off). Address 5FFE is "wired up"
 to the pointer to the byte to display. (Add the value to the starting address
 of the IO range.)
 */
-const uint16_t IO_RANGE[2] = {0x5F00, 0x5FFF};
+const uint32_t IO_RANGE[2] = {0x3FFF00, 0x3FFFFF};
 
 int main() {
 	// Set the testing mode: 0 is no debug info, 1 is some (e.g printing the address), 
@@ -25,7 +25,7 @@ int main() {
 	data.cyclenum = 0;
 
 	// Make the memory
-	uint8_t mem[MAX_MEM];
+	uint8_t *mem = (uint8_t*) malloc(1024 * 1024 * 16); // 16 megs wow!
 
 	// This is just so the program is out of the way and it's easier to navigate main.
 	loadProg(mem);
@@ -58,7 +58,7 @@ int main() {
 			alreadyPrinted = 0;
             if (testing_mode > 2) 
             {
-                printf("Addr cleared: %04x\n", data.PC);
+                printf("Addr cleared: %06x\n", data.PC);
             }
 		}
         if (testing_mode > 3) 
@@ -76,13 +76,15 @@ int main() {
 
 	// Print some debug info
 	printf("Clock cycles: %d\n", data.cyclenum);
-	printf("Final address: %04x\n", (data.PC - 1) & 0xFFFF);
+	printf("Final address: %06x\n", (data.PC - 1) & 0xFFFF);
 
 	// Output onto the terminal
 	printf("TERMINAL OUTPUT:\n");
     for (int i = 0; i < nextFree; i++) {
         printf("%c", string[i]);
     }
+
+	free(mem);
 
 	return data.exit_code;
 }
@@ -91,76 +93,84 @@ void loadProg(uint8_t *mem) {
  	
 	// This is a vector to the reset function.
 
-	mem[0xFFFC] = 0x00;
-	mem[0xFFFD] = 0xFF;
+	mem[0xFFFFFA] = 0x00;
+	mem[0xFFFFFB] = 0xF0;
+	mem[0xFFFFFC] = 0xFF;
 	
-	// Note: 0xFFFE and 0xFFFF are used for the interrupt vector.
+	// Note: 0xFFFFFE and 0xFFFFFF are used for the interrupt vector.
 
-	// Print "(keyboard input)\n" then turn it off.
-	// For some reason, when a space is inputted, it doesn't change the data in the IO range,
-	// so when it should print a space, it stops printing, as the program detects a 0 and stops.
+	// Print "(keyboard input)\n" then turn it off
 	
-	mem[0x6000] = MTA_KYB_IP;
-	mem[0x6001] = INS_JSR_AB;
-	mem[0x6002] = 0xFF;
-	mem[0x6003] = 0x60;
-	mem[0x6004] = INS_LDX_IM;
-	mem[0x6005] = 0x0A;
-	mem[0x6006] = INS_JSR_AB;
-	mem[0x6007] = 0xF0;
-	mem[0x6008] = 0x60;
-    mem[0x6009] = MTA_OFF_IP;
+	mem[0x400000] = MTA_KYB_IP;
+	mem[0x400001] = INS_JSR_AB;
+	mem[0x400002] = 0x02;
+	mem[0x400003] = 0x01;
+	mem[0x400004] = 0x40;
+	mem[0x400005] = INS_LDX_IM;
+	mem[0x400006] = 0x0A;
+	mem[0x400007] = INS_JSR_AB;
+	mem[0x400008] = 0xF0;
+	mem[0x400009] = 0x00;
+	mem[0x40000A] = 0x40;
+    mem[0x40000B] = MTA_OFF_IP;
 
 	// Print subroutine
-	mem[0x60F0] = INS_TXA_IP;
-	mem[0x60F1] = INS_STX_AB;
-	mem[0x60F2] = IO_RANGE[1] - 1;
-	mem[0x60F3] = (IO_RANGE[1] - 1) >> 8;
-    mem[0x60F4] = INS_LDA_IM;
-	mem[0x60F5] = 0x00;
-    mem[0x60F6] = INS_STA_AB;
-	mem[0x60F7] = IO_RANGE[1];
-	mem[0x60F8] = IO_RANGE[1] >> 8;
-	mem[0x60F9] = INS_LDA_IM;
-	mem[0x60FA] = 0x01;
-	mem[0x60FB] = INS_STA_AB;
-	mem[0x60FC] = IO_RANGE[1];
-	mem[0x60FD] = IO_RANGE[1] >> 8;
-	mem[0x60FE] = INS_RTS_IP;
+	mem[0x4000F0] = INS_TXA_IP;
+	mem[0x4000F1] = INS_STX_AB;
+	mem[0x4000F2] = IO_RANGE[1] - 1;
+	mem[0x4000F3] = (IO_RANGE[1] - 1) >> 8;
+	mem[0x4000F4] = (IO_RANGE[1] - 1) >> 16;
+    mem[0x4000F5] = INS_LDA_IM;
+	mem[0x4000F6] = 0x00;
+    mem[0x4000F7] = INS_STA_AB;
+	mem[0x4000F8] = IO_RANGE[1];
+	mem[0x4000F9] = IO_RANGE[1] >> 8;
+	mem[0x4000FA] = IO_RANGE[1] >> 16;
+	mem[0x4000FB] = INS_LDA_IM;
+	mem[0x4000FC] = 0x01;
+	mem[0x4000FD] = INS_STA_AB;
+	mem[0x4000FE] = IO_RANGE[1];
+	mem[0x4000FF] = IO_RANGE[1] >> 8;
+	mem[0x400100] = IO_RANGE[1] >> 16;
+	mem[0x400101] = INS_RTS_IP;
 
 	// Print keyboard input subroutine
-	mem[0x60FF] = INS_LDY_IM;
-	mem[0x6100] = 0x00;
-	mem[0x6101] = INS_LDX_AY;
-	mem[0x6102] = IO_RANGE[0];
-	mem[0x6103] = IO_RANGE[0] >> 8;
-	mem[0x6104] = INS_JSR_AB;
-	mem[0x6105] = 0xF0;
-	mem[0x6106] = 0x60;
-    mem[0x6107] = INS_INY_IP;
-    mem[0x6108] = INS_LDA_IM;
-	mem[0x6109] = 0x00;
-	mem[0x610A] = INS_ADC_AY;
-	mem[0x610B] = IO_RANGE[0];
-	mem[0x610C] = IO_RANGE[0] >> 8;
-	mem[0x610D] = INS_BNE_RL;
-    mem[0x610E] = 0b10001101;
-	mem[0x610F] = INS_RTS_IP;
+	mem[0x400102] = INS_LDY_IM;
+	mem[0x400103] = 0x00;
+	mem[0x400104] = INS_LDX_AY;
+	mem[0x400105] = IO_RANGE[0];
+	mem[0x400106] = IO_RANGE[0] >> 8;
+	mem[0x400107] = IO_RANGE[0] >> 16;
+	mem[0x400108] = INS_JSR_AB;
+	mem[0x400109] = 0xF0;
+	mem[0x40010A] = 0x00;
+	mem[0x40010B] = 0x40;
+    mem[0x40010C] = INS_INY_IP;
+    mem[0x40010D] = INS_LDA_IM;
+	mem[0x40010E] = 0x00;
+	mem[0x40010F] = INS_ADC_AY;
+	mem[0x400110] = IO_RANGE[0];
+	mem[0x400111] = IO_RANGE[0] >> 8;
+	mem[0x400112] = IO_RANGE[0] >> 16;
+	mem[0x400113] = INS_BNE_RL;
+    mem[0x400114] = 0b10010000;
+	mem[0x400115] = INS_RTS_IP;
 
 	// Custom reset code
-	mem[0xFF00] = INS_LDX_IM;
-	mem[0xFF01] = 0x00;
-	mem[0xFF02] = INS_LDY_IM;
-	mem[0xFF03] = 0x00;
-	mem[0xFF04] = INS_LDA_IM;
-	mem[0xFF05] = 0x00;
-	mem[0xFF06] = INS_CLD_IP;
-	mem[0xFF07] = INS_CLI_IP;
-	mem[0xFF08] = INS_CLC_IP;
-	mem[0xFF09] = INS_CLV_IP;
-	mem[0xFF0A] = INS_JMP_AB;
-	mem[0xFF0B] = 0x00;
-	mem[0xFF0C] = 0x60;
+	mem[0xFFF000] = INS_LDX_IM;
+	mem[0xFFF001] = 0x00;
+	mem[0xFFF002] = INS_LDY_IM;
+	mem[0xFFF003] = 0x00;
+	mem[0xFFF004] = INS_LDA_IM;
+	mem[0xFFF005] = 0x00;
+	mem[0xFFF006] = INS_CLD_IP;
+	mem[0xFFF007] = INS_CLI_IP;
+	mem[0xFFF008] = INS_CLC_IP;
+	mem[0xFFF009] = INS_CLV_IP;
+	mem[0xFFF00A] = INS_JMP_AB;
+	mem[0xFFF00B] = 0x00;
+	mem[0xFFF00C] = 0x00;
+	mem[0xFFF00D] = 0x40;
 
 	return;
 }

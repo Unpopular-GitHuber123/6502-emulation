@@ -4,6 +4,9 @@ This emulation is similar to the MOS 6502 processor.
 It is not a 1:1 emulation, especially during the boot
 sequence, but it is close-ish.
 
+Also I gave it a 24 bit address bus because I wanna write 
+an OS in it!!! (I've never written one before lmao)
+
 It has a maximum addressable memory of 64 KB, including
 RAM, ROM, and a stack. These would be external
 components in an actual physical circuit.
@@ -21,12 +24,12 @@ Helpful video: https://www.youtube.com/watch?v=qJgsuQoy9bc
 #include "instruction_set.c"
 
 // Memory (Change the ranges as you want but be prepared for seg faults and unexpected behaviour):
-const uint16_t MAX_MEM = 0xFFFF;
-const uint16_t ZPAGE_RANGE[2] = {0x0000, 0x00FF};
-const uint16_t STACK_RANGE[2] = {0x0100, 0x01FF};
-const uint16_t RAM_RANGE[2] = {0x0200, 0x5FFF};
-const uint16_t ROM_RANGE[2] = {0x6000, 0xFFFF};
-const uint16_t SYSMEM_RANGE[2] = {0xFF00, 0xFFFF};
+const uint32_t MAX_MEM = 0xFFFFFF;
+const uint32_t ZPAGE_RANGE[2] = {0x000000, 0x0000FF};
+const uint32_t STACK_RANGE[2] = {0x000100, 0x0001FF};
+const uint32_t RAM_RANGE[2] = {0x000200, 0x3FFFFF};
+const uint32_t ROM_RANGE[2] = {0x600000, 0xFFFFFF};
+const uint32_t SYSMEM_RANGE[2] = {0xFFF000, 0xFFFFFF};
 
 struct data {
 	uint8_t C : 1; // Carry
@@ -38,7 +41,7 @@ struct data {
 	uint8_t V : 1; // Overflow flag
 	uint8_t N : 1; // Negative flag
 
-	uint16_t PC; // Program counter
+	uint32_t PC; // Program counter
 	uint8_t SP; // Stack pointer
     
     uint8_t exit_code;
@@ -113,7 +116,7 @@ uint8_t stackPop(struct data *data, uint8_t *mem, uint8_t testing_mode) {
 	return toReturn;
 }
 
-void storeMem(uint8_t *mem, uint16_t address, uint8_t value, struct data *data) {
+void storeMem(uint8_t *mem, uint32_t address, uint8_t value, struct data *data) {
 	if (address >= RAM_RANGE[0] && address <= RAM_RANGE[1]) {
 		mem[address] = value;
 	} else {
@@ -129,11 +132,13 @@ void setFlagsLDA(struct data *data, uint8_t val) {
 	return;
 }
 
-uint16_t getWord(struct data *data, uint16_t *address, uint8_t *mem) {
+uint32_t getAddr(struct data *data, uint32_t *address, uint8_t *mem) {
 	uint8_t lowByte = mem[*address];
 	(*address)++;
 	uint8_t highByte = mem[*address];
-	return (lowByte | (highByte << 8));
+	(*address)++;
+	uint8_t highHighByte = mem[*address];
+	return (lowByte | (highByte << 8) | (highHighByte << 16));
 }
 
 uint8_t* initialise_mem(struct data data, uint8_t* mem) {
@@ -146,18 +151,18 @@ uint8_t* initialise_mem(struct data data, uint8_t* mem) {
 
 void reset(struct data *data, uint8_t *mem) {
 	data -> clk = 1;
-	uint16_t temp = 0xFFFC;
-	data -> PC = getWord(data, &temp, mem);
+	uint32_t temp = 0xFFFFFA;
+	data -> PC = getAddr(data, &temp, mem);
 	data -> cyclenum = 0;
 	data -> exit_code = 0;
 
 	return;
 }
 
-uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t testing_mode, uint8_t *keyboard_addr) {
+void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing_mode, uint8_t *keyboard_addr) {
 	if (testing_mode > 0) {
 		printf("Instruction: %02x\n", mem[*address]);
-		printf("Address: %04x\n", *address);
+		printf("Address: %06x\n", *address);
 	}
 	switch (mem[*address]) {
 		case MTA_OFF_IP:
@@ -167,14 +172,16 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			scanf("%s", keyboard_addr);
 			break;
 		case INS_BRK_IP:
-			uint16_t temp = 0xFFFE;
+			uint32_t temp = 0xFFFFFD;
 			stackPush(data, mem, *address, testing_mode);
+			stackPush(data, mem, (*address >> 8), testing_mode);
+			stackPush(data, mem, (*address >> 16), testing_mode);
 			stackPush(data, mem, getPS(*data), testing_mode);
 			data -> B = 1;
-			*address = getWord(data, &temp, mem);
+			*address = getAddr(data, &temp, mem);
 			data -> cyclenum += 7;
 			if (testing_mode > 1) {
-				printf("Interrupted to: %04x\n", *address);
+				printf("Interrupted to: %06x\n", *address);
 			}
 			break;
 		case INS_STA_ZP:
@@ -187,15 +194,15 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_STA_AB:
 			(*address)++;
-			mem[getWord(data, address, mem)] = data -> A;
+			mem[getAddr(data, address, mem)] = data -> A;
 			break;
 		case INS_STA_AX:
 			(*address)++;
-			mem[getWord(data, address, mem) + data -> X] = data -> A;
+			mem[getAddr(data, address, mem) + data -> X] = data -> A;
 			break;
 		case INS_STA_AY:
 			(*address)++;
-			mem[getWord(data, address, mem) + data -> Y] = data -> A;
+			mem[getAddr(data, address, mem) + data -> Y] = data -> A;
 			break;
 		case INS_STA_IX:
 			(*address)++;
@@ -207,7 +214,10 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_RTI_IP:
 			setPS(data, stackPop(data, mem, testing_mode));
-			data -> PC = stackPop(data, mem, testing_mode);
+			temp = stackPop(data, mem, testing_mode);
+			temp |= (stackPop(data, mem, testing_mode) << 8);
+			temp |= (stackPop(data, mem, testing_mode) << 16);
+			data -> PC = temp;
 			break;
 		case INS_STX_ZP:
 			(*address)++;
@@ -219,11 +229,11 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_STX_AB:
 			(*address)++;
-			mem[getWord(data, address, mem)] = data -> X;
+			mem[getAddr(data, address, mem)] = data -> X;
 			break;
 		case INS_STY_AB:
 			(*address)++;
-			mem[getWord(data, address, mem)] = data -> Y;
+			mem[getAddr(data, address, mem)] = data -> Y;
 			break;
 		case INS_STY_ZP:
 			(*address)++;
@@ -254,12 +264,12 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			data -> N = ((data -> A & 0b10000000) > 0);
 			break;
 		case INS_TSX_IP:
-			data -> X = *address;
+			data -> X = data -> SP;
 			data -> Z = (data -> X == 0);
 			data -> N = ((data -> X & 0b10000000) > 0);
 			break;
 		case INS_TXS_IP:
-			*address = data -> X;
+			data -> SP = data -> X;
 			break;
 		case INS_DEC_ZP:
 			(*address)++;
@@ -271,11 +281,11 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_DEC_AB:
 			(*address)++;
-			mem[getWord(data, address, mem)]--;
+			mem[getAddr(data, address, mem)]--;
 			break;
 		case INS_DEC_AX:
 			(*address)++;
-			mem[getWord(data, address, mem) + data -> X]--;
+			mem[getAddr(data, address, mem) + data -> X]--;
 			break;
 		case INS_INC_ZP:
 			(*address)++;
@@ -287,11 +297,11 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_INC_AB:
 			(*address)++;
-			mem[getWord(data, address, mem)]++;
+			mem[getAddr(data, address, mem)]++;
 			break;
 		case INS_INC_AX:
 			(*address)++;
-			mem[getWord(data, address, mem) + data -> X]++;
+			mem[getAddr(data, address, mem) + data -> X]++;
 			break;
 		case INS_DEX_IP:
 			data -> X--;
@@ -338,7 +348,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_ROL_AB:
 			(*address)++;
-			uint16_t temp2 = getWord(data, address, mem);
+			uint32_t temp2 = getAddr(data, address, mem);
 			temp = (mem[temp2] & 0b10000000);
 			mem[temp2] << 1;
 			mem[temp2] += data -> C;
@@ -347,7 +357,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_ROL_AX:
 			(*address)++;
-			temp2 = getWord(data, address, mem) + data -> X;
+			temp2 = getAddr(data, address, mem) + data -> X;
 			temp = (mem[temp2] & 0b10000000);
 			mem[temp2] << 1;
 			mem[temp2] += data -> C;
@@ -379,7 +389,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_ROR_AB:
 			(*address)++;
-			temp2 = getWord(data, address, mem);
+			temp2 = getAddr(data, address, mem);
 			temp = (mem[temp2] & 0b10000000);
 			mem[temp2] >> 1;
 			mem[temp2] += data -> C;
@@ -388,7 +398,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_ROR_AX:
 			(*address)++;
-			temp2 = getWord(data, address, mem) + data -> X;
+			temp2 = getAddr(data, address, mem) + data -> X;
 			temp = (mem[temp2] & 0b10000000);
 			mem[temp2] >> 1;
 			mem[temp2] += data -> C;
@@ -402,7 +412,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			data -> N = ((data -> A & 0b10000000) > 0);
 			break;
 		case INS_ASL_ZP:
-			uint16_t *temp1 = (uint16_t*) &(mem[mem[*address]]);
+			uint32_t *temp1 = (uint32_t*) &(mem[mem[*address]]);
 			(*address)++;
 			data -> C = ((*temp1 & 0b10000000) > 0);
 			*temp1 << 1;
@@ -411,7 +421,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_ASL_ZX:
 			(*address)++;
-			temp1 = (uint16_t*) (uint8_t*) &(mem[mem[*address] + data -> X]);
+			temp1 = (uint32_t*) (uint8_t*) &(mem[mem[*address] + data -> X]);
 			data -> C = ((*temp1 & 0b10000000) > 0);
 			*temp1 << 1;
 			data -> Z = (*temp1 == 0);
@@ -419,7 +429,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_ASL_AB:
 			(*address)++;
-			temp1 = (uint16_t*) &(mem[getWord(data, address, mem)]);
+			temp1 = (uint32_t*) &(mem[getAddr(data, address, mem)]);
 			data -> C = ((*temp1 & 0b10000000) > 0);
 			*temp1 << 1;
 			data -> Z = (*temp1 == 0);
@@ -427,7 +437,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_ASL_AX:
 			(*address)++;
-			temp1 = (uint16_t*) &(mem[getWord(data, address, mem) + data -> X]);
+			temp1 = (uint32_t*) &(mem[getAddr(data, address, mem) + data -> X]);
 			data -> C = ((*temp1 & 0b10000000) > 0);
 			*temp1 << 1;
 			data -> Z = (*temp1 == 0);
@@ -440,7 +450,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			data -> N = 0;
 			break;
 		case INS_LSR_ZP:
-			temp1 = (uint16_t*) &(mem[mem[*address]]);
+			temp1 = (uint32_t*) &(mem[mem[*address]]);
 			(*address)++;
 			data -> C = ((*temp1 & 0b00000001) > 0);
 			*temp1 >> 1;
@@ -449,7 +459,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_LSR_ZX:
 			(*address)++;
-			temp1 = (uint16_t*) (uint8_t*) &(mem[mem[*address] + data -> X]);
+			temp1 = (uint32_t*) (uint8_t*) &(mem[mem[*address] + data -> X]);
 			data -> C = ((*temp1 & 0b00000001) > 0);
 			*temp1 >> 1;
 			data -> Z = (*temp1 == 0);
@@ -457,7 +467,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_LSR_AB:
 			(*address)++;
-			temp1 = (uint16_t*) &(mem[getWord(data, address, mem)]);
+			temp1 = (uint32_t*) &(mem[getAddr(data, address, mem)]);
 			data -> C = ((*temp1 & 0b00000001) > 0);
 			*temp1 >> 1;
 			data -> Z = (*temp1 == 0);
@@ -465,7 +475,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_LSR_AX:
 			(*address)++;
-			temp1 = (uint16_t*) &(mem[getWord(data, address, mem) + data -> X]);
+			temp1 = (uint32_t*) &(mem[getAddr(data, address, mem) + data -> X]);
 			data -> C = ((*temp1 & 0b00000001) > 0);
 			*temp1 >> 1;
 			data -> Z = (*temp1 == 0);
@@ -494,21 +504,21 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_CMP_AB:
 			(*address)++;
-			temp = (uint8_t) data -> A - mem[getWord(data, address, mem)];
+			temp = (uint8_t) data -> A - mem[getAddr(data, address, mem)];
 			data -> N = (temp & 0b10000000 > 0);
 			data -> C = (data -> A >= mem[*address]);
 			data -> Z = (data -> A > mem[*address]);
 			break;
 		case INS_CMP_AX:
 			(*address)++;
-			temp = (uint8_t) data -> A - mem[(getWord(data, address, mem) + data -> X) & 0b11111111];
+			temp = (uint8_t) data -> A - mem[(getAddr(data, address, mem) + data -> X) & 0b11111111];
 			data -> N = (temp & 0b10000000 > 0);
 			data -> C = (data -> A >= mem[*address]);
 			data -> Z = (data -> A > mem[*address]);
 			break;
 		case INS_CMP_AY:
 			(*address)++;
-			temp = (uint8_t) data -> A - mem[(getWord(data, address, mem) + data -> Y) & 0b11111111];
+			temp = (uint8_t) data -> A - mem[(getAddr(data, address, mem) + data -> Y) & 0b11111111];
 			data -> N = (temp & 0b10000000 > 0);
 			data -> C = (data -> A >= mem[*address]);
 			data -> Z = (data -> A > mem[*address]);
@@ -524,7 +534,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 		case INS_CMP_IY:
 			(*address)++;
 			temp3 = mem[mem[*address]];
-			temp = (data -> A - ((getWord(data, (uint16_t*) (&temp3), mem) + data -> Y) & 0b11111111)) & 0b11111111;
+			temp = (data -> A - ((getAddr(data, (uint32_t*) (&temp3), mem) + data -> Y) & 0b11111111)) & 0b11111111;
 			data -> N = (temp & 0b10000000 > 0);
 			data -> C = (data -> A >= mem[*address]);
 			data -> Z = (data -> A > mem[*address]);
@@ -591,33 +601,33 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_AND_AB:
 			(*address)++;
-			data -> A = (data -> A & (uint8_t) mem[getWord(data, address, mem)]);
+			data -> A = (data -> A & (uint8_t) mem[getAddr(data, address, mem)]);
 			data -> Z = (data -> A == 0);
 			data -> N = (data -> A & 0b10000000 > 0);
 			break;
 		case INS_AND_AX:
 			(*address)++;
-			data -> A = (data -> A & (uint8_t) mem[getWord(data, address, mem) + data -> X]);
+			data -> A = (data -> A & (uint8_t) mem[getAddr(data, address, mem) + data -> X]);
 			data -> Z = (data -> A == 0);
 			data -> N = (data -> A & 0b10000000 > 0);
 			break;
 		case INS_AND_AY:
 			(*address)++;
-			data -> A = (data -> A & (uint8_t) mem[getWord(data, address, mem) + data -> Y]);
+			data -> A = (data -> A & (uint8_t) mem[getAddr(data, address, mem) + data -> Y]);
 			data -> Z = (data -> A == 0);
 			data -> N = (data -> A & 0b10000000 > 0);
 			break;
 		case INS_AND_IX:
 			(*address)++;
 			temp = (uint8_t) (mem[*address] + data -> X);
-			data -> A = (data -> A & mem[getWord(data, &temp, mem)]);
+			data -> A = (data -> A & mem[getAddr(data, &temp, mem)]);
 			data -> Z = (data -> A == 0);
 			data -> N = (data -> A & 0b10000000 > 0);
 			break;
 		case INS_AND_IY:
 			(*address)++;
 			temp = (mem[*address]) & 0b11111111;
-			data -> A = (data -> A & mem[(getWord(data, &temp, mem) + data -> Y) & 0b11111111]);
+			data -> A = (data -> A & mem[(getAddr(data, &temp, mem) + data -> Y) & 0b11111111]);
 			data -> Z = (data -> A == 0);
 			data -> N = (data -> A & 0b10000000 > 0);
 			break;
@@ -641,33 +651,33 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_EOR_AB:
 			(*address)++;
-			data -> A = (data -> A ^ (uint8_t) mem[getWord(data, address, mem)]);
+			data -> A = (data -> A ^ (uint8_t) mem[getAddr(data, address, mem)]);
 			data -> Z = (data -> A == 0);
 			data -> N = (data -> A & 0b10000000 > 0);
 			break;
 		case INS_EOR_AX:
 			(*address)++;
-			data -> A = (data -> A ^ (uint8_t) mem[getWord(data, address, mem) + data -> X]);
+			data -> A = (data -> A ^ (uint8_t) mem[getAddr(data, address, mem) + data -> X]);
 			data -> Z = (data -> A == 0);
 			data -> N = (data -> A & 0b10000000 > 0);
 			break;
 		case INS_EOR_AY:
 			(*address)++;
-			data -> A = (data -> A ^ (uint8_t) mem[getWord(data, address, mem) + data -> Y]);
+			data -> A = (data -> A ^ (uint8_t) mem[getAddr(data, address, mem) + data -> Y]);
 			data -> Z = (data -> A == 0);
 			data -> N = (data -> A & 0b10000000 > 0);
 			break;
 		case INS_EOR_IX:
 			(*address)++;
 			temp = (uint8_t) (mem[*address] + data -> X);
-			data -> A = (data -> A ^ mem[getWord(data, &temp, mem)]);
+			data -> A = (data -> A ^ mem[getAddr(data, &temp, mem)]);
 			data -> Z = (data -> A == 0);
 			data -> N = (data -> A & 0b10000000 > 0);
 			break;
 		case INS_EOR_IY:
 			(*address)++;
 			temp = (mem[*address]) & 0b11111111;
-			data -> A = (data -> A ^ mem[(getWord(data, &temp, mem) + data -> Y) & 0b11111111]);
+			data -> A = (data -> A ^ mem[(getAddr(data, &temp, mem) + data -> Y) & 0b11111111]);
 			data -> Z = (data -> A == 0);
 			data -> N = (data -> A & 0b10000000 > 0);
 			break;
@@ -691,33 +701,33 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_ORA_AB:
 			(*address)++;
-			data -> A = (data -> A | (uint8_t) mem[getWord(data, address, mem)]);
+			data -> A = (data -> A | (uint8_t) mem[getAddr(data, address, mem)]);
 			data -> Z = (data -> A == 0);
 			data -> N = (data -> A & 0b10000000 > 0);
 			break;
 		case INS_ORA_AX:
 			(*address)++;
-			data -> A = (data -> A | (uint8_t) mem[getWord(data, address, mem) + data -> X]);
+			data -> A = (data -> A | (uint8_t) mem[getAddr(data, address, mem) + data -> X]);
 			data -> Z = (data -> A == 0);
 			data -> N = (data -> A & 0b10000000 > 0);
 			break;
 		case INS_ORA_AY:
 			(*address)++;
-			data -> A = (data -> A | (uint8_t) mem[getWord(data, address, mem) + data -> Y]);
+			data -> A = (data -> A | (uint8_t) mem[getAddr(data, address, mem) + data -> Y]);
 			data -> Z = (data -> A == 0);
 			data -> N = (data -> A & 0b10000000 > 0);
 			break;
 		case INS_ORA_IX:
 			(*address)++;
 			temp = (uint8_t) (mem[*address] + data -> X);
-			data -> A = (data -> A | mem[getWord(data, &temp, mem)]);
+			data -> A = (data -> A | mem[getAddr(data, &temp, mem)]);
 			data -> Z = (data -> A == 0);
 			data -> N = (data -> A & 0b10000000 > 0);
 			break;
 		case INS_ORA_IY:
 			(*address)++;
 			temp = (mem[*address]) & 0b11111111;
-			data -> A = (data -> A | mem[(getWord(data, &temp, mem) + data -> Y) & 0b11111111]);
+			data -> A = (data -> A | mem[(getAddr(data, &temp, mem) + data -> Y) & 0b11111111]);
 			data -> Z = (data -> A == 0);
 			data -> N = (data -> A & 0b10000000 > 0);
 			break;
@@ -745,7 +755,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 					*address += mem[*address] & 0b01111111;
 				} 
 				if (testing_mode > 1) {
-						printf("Branched to: %04x\n", *address);
+						printf("Branched to: %06x\n", *address);
 				}
 			} else {
 				if (testing_mode > 1) {
@@ -765,7 +775,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 					*address += mem[*address] & 0b01111111;
 				} 
 				if (testing_mode > 1) {
-						printf("Branched to: %04x\n", *address);
+						printf("Branched to: %06x\n", *address);
 				}
 			} else {
 				if (testing_mode > 1) {
@@ -785,7 +795,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 					*address += mem[*address] & 0b01111111;
 				} 
 				if (testing_mode > 1) {
-						printf("Branched to: %04x\n", *address);
+						printf("Branched to: %06x\n", *address);
 				}
 			} else {
 				if (testing_mode > 1) {
@@ -806,7 +816,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 					*address += mem[*address] & 0b01111111;
 				}
 				if (testing_mode > 1) {
-						printf("Branched to: %04x\n", *address);
+						printf("Branched to: %06x\n", *address);
 				}
 			} else {
 				if (testing_mode > 1) {
@@ -826,7 +836,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 					*address += mem[*address] & 0b01111111;
 				}
 				if (testing_mode > 1) {
-					printf("Branched to: %04x\n", *address);
+					printf("Branched to: %06x\n", *address);
 				}
 			} else {
 				if (testing_mode > 1) {
@@ -846,7 +856,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 					*address += (mem[*address] & 0b01111111) - 1;
 				}
 				if (testing_mode > 1) {
-					printf("Branched to: %04x\n", *address);
+					printf("Branched to: %06x\n", *address);
 				}
 			} else {
 				if (testing_mode > 1) {
@@ -866,7 +876,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 					*address += mem[*address] & 0b01111111;
 				}
 				if (testing_mode > 1) {
-					printf("Branched to: %04x\n", *address);
+					printf("Branched to: %06x\n", *address);
 				}
 			} else {
 				if (testing_mode > 1) {
@@ -883,7 +893,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_BIT_AB:
 			(*address)++;
-			temp = data -> A & mem[getWord(data, address, mem)];
+			temp = data -> A & mem[getAddr(data, address, mem)];
 			data -> V = (temp & 0b01000000) > 0;
 			data -> N = (temp & 0b10000000) > 0;
 			data -> Z = (temp == 0);
@@ -929,7 +939,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_ADC_AB:
 			(*address)++;
-			output = data -> A + mem[getWord(data, address, mem)];
+			output = data -> A + mem[getAddr(data, address, mem)];
 			if (data -> C == 1) { output += 256; }
 			data -> C = (output >= 256);
 			data -> V = ((data -> A & 0b10000000) != (output & 0b10000000));
@@ -942,7 +952,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_ADC_AX:
 			(*address)++;
-			output = data -> A + mem[getWord(data, address, mem) + data -> X];
+			output = data -> A + mem[getAddr(data, address, mem) + data -> X];
 			if (data -> C == 1) { output += 256; }
 			data -> C = (output >= 256);
 			data -> V = ((data -> A & 0b10000000) != (output & 0b10000000));
@@ -955,7 +965,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_ADC_AY:
 			(*address)++;
-			output = data -> A + mem[getWord(data, address, mem)] + data -> Y;
+			output = data -> A + mem[getAddr(data, address, mem)] + data -> Y;
 			if (data -> C == 1) { output += 256; }
 			data -> C = (output >= 256);
 			data -> V = ((data -> A & 0b10000000) != (output & 0b10000000));
@@ -969,7 +979,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 		case INS_ADC_IX:
 			(*address)++;
 			temp = (data -> X + mem[*address]) & 0b11111111;
-			output = data -> A + mem[getWord(data, &temp, mem)];
+			output = data -> A + mem[getAddr(data, &temp, mem)];
 			if (data -> C == 1) { output += 256; }
 			data -> C = (output >= 256);
 			data -> V = ((data -> A & 0b10000000) != (output & 0b10000000));
@@ -983,7 +993,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 		case INS_ADC_IY:
 			(*address)++;
 			temp = mem[*address];
-			output = data -> A + mem[(getWord(data, &temp, mem) + data -> Y) & 0b11111111];
+			output = data -> A + mem[(getAddr(data, &temp, mem) + data -> Y) & 0b11111111];
 			if (data -> C == 1) { output += 256; }
 			data -> C = (output >= 256);
 			data -> V = ((data -> A & 0b10000000) != (output & 0b10000000));
@@ -1032,7 +1042,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_SBC_AB:
 			(*address)++;
-			output = (data -> A + (!(data -> C) * 256)) - mem[getWord(data, address, mem)];
+			output = (data -> A + (!(data -> C) * 256)) - mem[getAddr(data, address, mem)];
 			data -> C = (output >= 256);
 			data -> V = ((data -> A & 0b10000000) != (output & 0b10000000));
 			data -> A = output;
@@ -1044,7 +1054,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_SBC_AX:
 			(*address)++;
-			output = (data -> A + (!(data -> C) * 256)) - mem[getWord(data, address, mem)+ data -> X];
+			output = (data -> A + (!(data -> C) * 256)) - mem[getAddr(data, address, mem)+ data -> X];
 			data -> C = (output >= 256);
 			data -> V = ((data -> A & 0b10000000) != (output & 0b10000000));
 			data -> A = output;
@@ -1056,7 +1066,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_SBC_AY:
 			(*address)++;
-			output = (data -> A + (!(data -> C) * 256)) - mem[getWord(data, address, mem) + data -> Y];
+			output = (data -> A + (!(data -> C) * 256)) - mem[getAddr(data, address, mem) + data -> Y];
 			data -> C = (output >= 256);
 			data -> V = ((data -> A & 0b10000000) != (output & 0b10000000));
 			data -> A = output;
@@ -1069,7 +1079,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 		case INS_SBC_IX:
 			(*address)++;
 			temp = (data -> X + mem[*address]) & 0b11111111;
-			output = (data -> A + (!(data -> C) * 256)) - mem[getWord(data, &temp, mem)];
+			output = (data -> A + (!(data -> C) * 256)) - mem[getAddr(data, &temp, mem)];
 			data -> C = (output >= 256);
 			data -> V = ((data -> A & 0b10000000) != (output & 0b10000000));
 			data -> A = output;
@@ -1082,7 +1092,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 		case INS_SBC_IY:
 			(*address)++;
 			temp = mem[*address];
-			output = (data -> A + (!(data -> C) * 256)) - mem[(getWord(data, &temp, mem) + data -> Y) & 0b11111111];
+			output = (data -> A + (!(data -> C) * 256)) - mem[(getAddr(data, &temp, mem) + data -> Y) & 0b11111111];
 			data -> C = (output >= 256);
 			data -> V = ((data -> A & 0b10000000) != (output & 0b10000000));
 			data -> A = output;
@@ -1094,38 +1104,40 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_JMP_AB:
 			(*address)++;
-			*address = getWord(data, address, mem) - 1;
+			*address = getAddr(data, address, mem) - 1;
 			if (testing_mode > 1) {
-				printf("Address jumped to: %04x\n", *address + 1);
+				printf("Address jumped to: %06x\n", *address + 1);
 			}
 			break;
 		case INS_JMP_ID:
 			(*address)++;
-			uint16_t addr = getWord(data, address, mem);
-			(*address) = getWord(data, &addr, mem) - 1;
+			uint32_t addr = getAddr(data, address, mem);
+			(*address) = getAddr(data, &addr, mem) - 1;
 			if (testing_mode > 1) {
-				printf("Address jumped to: %04x\n", *address + 1);
+				printf("Address jumped to: %06x\n", *address + 1);
 			}
 			break;
 		case INS_JSR_AB:
 			(*address)++;
 			stackPush(data, mem, (*address) - 1, testing_mode);
 			stackPush(data, mem, ((*address) - 1) >> 8, testing_mode);
-			*address = getWord(data, address, mem) - 1;
+			stackPush(data, mem, ((*address) - 1) >> 16, testing_mode);
+			*address = getAddr(data, address, mem) - 1;
 			if (testing_mode > 1) {
-				printf("Address jumped to: %04x\n", *address + 1);
+				printf("Address jumped to: %06x\n", *address + 1);
 			}
 			break;
 		case INS_RTS_IP:
+			uint8_t highHighByte = stackPop(data, mem, testing_mode);
 			uint8_t highByte = stackPop(data, mem, testing_mode);
 			uint8_t lowByte = stackPop(data, mem, testing_mode);
-			(*address) = (lowByte | (highByte << 8)) + 2;
+			(*address) = (lowByte | ((highByte << 8) | (highHighByte << 16))) + 3;
 			if (testing_mode > 3) {
 				printf("Low address byte: %02x\n", lowByte);
 				printf("High address byte: %02x\n", highByte);
 			}
 			if (testing_mode > 1) {
-				printf("Address returned to: %04x\n", *address + 1);
+				printf("Address returned to: %06x\n", *address + 1);
 			}
 			break;
 		case INS_LDX_IM:
@@ -1148,13 +1160,13 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_LDX_AB:
 			(*address)++;
-			data -> X = mem[getWord(data, address, mem)];
+			data -> X = mem[getAddr(data, address, mem)];
 			data -> Z = (data -> X == 0);
 			data -> N = ((data -> X & 0b10000000) > 0);
 			break;
 		case INS_LDX_AY:
 			(*address)++;
-			data -> X = mem[getWord(data, address, mem) + data -> Y];
+			data -> X = mem[getAddr(data, address, mem) + data -> Y];
 			data -> Z = (data -> X == 0);
 			data -> N = ((data -> X & 0b10000000) > 0);
 			break;
@@ -1178,13 +1190,13 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_LDY_AB:
 			(*address)++;
-			data -> Y = mem[getWord(data, address, mem)];
+			data -> Y = mem[getAddr(data, address, mem)];
 			data -> Z = (data -> Y == 0);
 			data -> N = ((data -> Y & 0b10000000) > 0);
 			break;
 		case INS_LDY_AX:
 			(*address)++;
-			data -> Y = mem[getWord(data, address, mem) + data -> X];
+			data -> Y = mem[getAddr(data, address, mem) + data -> X];
 			data -> Z = (data -> Y == 0);
 			data -> N = ((data -> Y & 0b10000000) > 0);
 			break;
@@ -1208,19 +1220,19 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_LDA_AB:
 			(*address)++;
-			data -> A = mem[getWord(data, address, mem)];
+			data -> A = mem[getAddr(data, address, mem)];
 			data -> Z = (data -> A == 0);
 			data -> N = ((data -> A & 0b10000000) > 0);
 			break;
 		case INS_LDA_AX:
 			(*address)++;
-			data -> A = mem[getWord(data, address, mem) + data -> X];
+			data -> A = mem[getAddr(data, address, mem) + data -> X];
 			data -> Z = (data -> A == 0);
 			data -> N = ((data -> A & 0b10000000) > 0);
 			break;
 		case INS_LDA_AY:
 			(*address)++;
-			data -> A = mem[getWord(data, address, mem) + data -> Y];
+			data -> A = mem[getAddr(data, address, mem) + data -> Y];
 			data -> Z = (data -> A == 0);
 			data -> N = ((data -> A & 0b10000000) > 0);
 			break;
@@ -1260,16 +1272,16 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 		case INS_NOP_IP:
 			break;
 		default:
-			printf("Unrecognised instruction at address: %04x\n", *address);
+			printf("Unrecognised instruction at address: %06x\n", *address);
 	}
 	if (testing_mode > 3) {
 		printf("C: %d Z: %d I: %d D: %d B: %d clk: %d V: %d N: %d\n", data -> C, data -> Z, data -> I, data -> D, data -> B, data -> clk, data -> V, data -> N);
-		printf("PC: %04x\n", data -> PC);
+		printf("PC: %06x\n", data -> PC);
 		printf("A: %02x\n", data -> A);
 		printf("X: %02x\n", data -> X);
 		printf("Y: %02x\n", data -> Y);
 		printf("SP: %02x\n", data -> SP);
 	}
 	(*address)++;
-	return 0x0002;
+	return;
 }

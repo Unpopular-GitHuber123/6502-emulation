@@ -1,8 +1,7 @@
 /*
 
     This is my own custom CPU design. It's a 16 bit CPU with a 32 bit address bus.
-    You can define the memory map yourself and write your own programs in a separate
-    file. (not implemented yet)
+    You can define the memory map yourself. (not implemented yet)
 
 */
 
@@ -30,3 +29,7 @@ struct data {
     uint32_t cycle_num;
 };
 
+void execute(struct data *data, uint8_t *mem, int testing_mode, uint32_t *ranges) {
+
+    return;
+}

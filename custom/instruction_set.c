@@ -1,10 +1,7 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
+// Opcodes:
 
-#define INS_NOP 0x0000
-#define INS_EXT 0x0001
+// System control:
+#define INS_NOP_IP 0x00 // No op
+#define INS_EXT_IP 0x01 // Exit (shutdown)
+#define INS_INT_IP 0x02 // Trigger interrupt
 
-void execute(struct data data, uint32_t *address, uint8_t *mem, uint16_t testing_mode) {
-
-}
