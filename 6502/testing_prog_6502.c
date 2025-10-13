@@ -64,8 +64,11 @@ int main() {
         if (testing_mode > 3) 
         {
             printf("on: %02x\n", mem[IO_RANGE[1]]);
-            printf("char: %c\n", mem[IO_RANGE[1] - 1]);
+            printf("char: %02x\n", mem[IO_RANGE[1] - 1]);
         }
+        if (testing_mode > 0) {
+			printf("\n");
+		}
         if (data.cyclenum > 10) {
             break;
         }
@@ -132,13 +135,15 @@ void loadProg(uint8_t *mem) {
 	mem[0x6104] = INS_JSR_AB;
 	mem[0x6105] = 0xF0;
 	mem[0x6106] = 0x60;
-	mem[0x6107] = INS_ADC_AY;
-	mem[0x6108] = IO_RANGE[0];
-	mem[0x6109] = IO_RANGE[0] >> 8;
-    mem[0x610A] = INS_INY_IP;
-	mem[0x610B] = INS_BNE_RL;
-    mem[0x610C] = 0b10001011;
-	mem[0x610D] = INS_RTS_IP;
+    mem[0x6107] = INS_INY_IP;
+    mem[0x6108] = INS_LDA_IM;
+	mem[0x6109] = 0x00;
+	mem[0x610A] = INS_ADC_AY;
+	mem[0x610B] = IO_RANGE[0];
+	mem[0x610C] = IO_RANGE[0] >> 8;
+	mem[0x610D] = INS_BNE_RL;
+    mem[0x610E] = 0b10001101;
+	mem[0x610F] = INS_RTS_IP;
 
 	// Custom reset code
 	mem[0xFF00] = INS_LDX_IM;
@@ -154,8 +159,6 @@ void loadProg(uint8_t *mem) {
 	mem[0xFF0A] = INS_JMP_AB;
 	mem[0xFF0B] = 0x00;
 	mem[0xFF0C] = 0x60;
-
-
 
 	return;
 }

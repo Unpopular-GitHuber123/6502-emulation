@@ -138,7 +138,7 @@ uint16_t getWord(struct data *data, uint16_t *address, uint8_t *mem) {
 
 uint8_t* initialise_mem(struct data data, uint8_t* mem) {
 	for (uint32_t i = RAM_RANGE[0]; i < RAM_RANGE[1]; i++) {
-		mem[i] = 0;
+		mem[i] = 0x00;
 	}
 
 	return mem;
@@ -1269,9 +1269,6 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 		printf("X: %02x\n", data -> X);
 		printf("Y: %02x\n", data -> Y);
 		printf("SP: %02x\n", data -> SP);
-	}
-	if (testing_mode > 0) {
-		printf("\n");
 	}
 	(*address)++;
 	return 0x0002;
