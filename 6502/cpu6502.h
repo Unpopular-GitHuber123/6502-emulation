@@ -36,4 +36,4 @@ uint8_t* initialise_mem(struct data data, uint8_t* mem);
 
 void reset(struct data *data, uint8_t *mem);
 
-uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t testing_mode);
+uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t testing_mode, uint8_t *keyboard_addr);

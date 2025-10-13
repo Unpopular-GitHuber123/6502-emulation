@@ -9,8 +9,9 @@
 #define INS_NOP_IP 0xEA
 #define INS_RTI_IP 0x40
 
-// Meta (there isn't any hardware so this is necessary)
+// Meta (there isn't any hardware so these are necessary)
 #define MTA_OFF_IP 0x03 // turn it off
+#define MTA_KYB_IP 0x04 // wait for keyboard input
 
 // Processing status
 #define INS_CLD_IP 0xD8

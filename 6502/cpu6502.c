@@ -154,7 +154,7 @@ void reset(struct data *data, uint8_t *mem) {
 	return;
 }
 
-uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t testing_mode) {
+uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t testing_mode, uint8_t *keyboard_addr) {
 	if (testing_mode > 0) {
 		printf("Instruction: %02x\n", mem[*address]);
 		printf("Address: %04x\n", *address);
@@ -163,12 +163,19 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 		case MTA_OFF_IP:
 			data -> clk = 0;
 			break;
+		case MTA_KYB_IP:
+			scanf("%s", keyboard_addr);
+			break;
 		case INS_BRK_IP:
 			uint16_t temp = 0xFFFE;
-			stackPush(data, mem, data -> PC, testing_mode);
+			stackPush(data, mem, *address, testing_mode);
 			stackPush(data, mem, getPS(*data), testing_mode);
 			data -> B = 1;
-			data -> PC = getWord(data, &temp, mem);
+			*address = getWord(data, &temp, mem);
+			data -> cyclenum += 7;
+			if (testing_mode > 1) {
+				printf("Interrupted to: %04x\n", *address);
+			}
 			break;
 		case INS_STA_ZP:
 			(*address)++;
@@ -737,6 +744,13 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 				{  
 					*address += mem[*address] & 0b01111111;
 				} 
+				if (testing_mode > 1) {
+						printf("Branched to: %04x\n", *address);
+				}
+			} else {
+				if (testing_mode > 1) {
+					printf("Failed to branch.\n", *address);
+				}
 			}
 			break;
 		case INS_BVC_RL:
@@ -750,6 +764,13 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 				{  
 					*address += mem[*address] & 0b01111111;
 				} 
+				if (testing_mode > 1) {
+						printf("Branched to: %04x\n", *address);
+				}
+			} else {
+				if (testing_mode > 1) {
+					printf("Failed to branch.\n", *address);
+				}
 			}
 			break;
 		case INS_BCS_RL:
@@ -763,7 +784,15 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 				{  
 					*address += mem[*address] & 0b01111111;
 				} 
+				if (testing_mode > 1) {
+						printf("Branched to: %04x\n", *address);
+				}
+			} else {
+				if (testing_mode > 1) {
+					printf("Failed to branch.\n", *address);
+				}
 			}
+			
 			break;
 		case INS_BEQ_RL:
 			(*address)++;
@@ -775,7 +804,14 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 				else 
 				{  
 					*address += mem[*address] & 0b01111111;
-				} 
+				}
+				if (testing_mode > 1) {
+						printf("Branched to: %04x\n", *address);
+				}
+			} else {
+				if (testing_mode > 1) {
+					printf("Failed to branch.\n", *address);
+				}
 			}
 			break;
 		case INS_BMI_RL:
@@ -788,7 +824,14 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 				else 
 				{  
 					*address += mem[*address] & 0b01111111;
-				} 
+				}
+				if (testing_mode > 1) {
+					printf("Branched to: %04x\n", *address);
+				}
+			} else {
+				if (testing_mode > 1) {
+					printf("Failed to branch.\n", *address);
+				}
 			}
 			break;
 		case INS_BNE_RL:
@@ -796,12 +839,19 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			if (!(data -> Z)) { 
 				if (mem[*address] & 0b10000000) 
 				{ 
-					*address -= mem[*address] & 0b01111111;
+					*address -= (mem[*address] & 0b01111111) + 1;
 				} 
 				else 
 				{  
-					*address += mem[*address] & 0b01111111;
-				} 
+					*address += (mem[*address] & 0b01111111) - 1;
+				}
+				if (testing_mode > 1) {
+					printf("Branched to: %04x\n", *address);
+				}
+			} else {
+				if (testing_mode > 1) {
+					printf("Failed to branch.\n", *address);
+				}
 			}
 			break;
 		case INS_BPL_RL:
@@ -814,7 +864,14 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 				else 
 				{  
 					*address += mem[*address] & 0b01111111;
-				} 
+				}
+				if (testing_mode > 1) {
+					printf("Branched to: %04x\n", *address);
+				}
+			} else {
+				if (testing_mode > 1) {
+					printf("Failed to branch.\n", *address);
+				}
 			}
 			break;
 		case INS_BIT_ZP:
@@ -885,8 +942,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_ADC_AX:
 			(*address)++;
-			uint16_t tempAdr = (*address) + data -> X;
-			output = data -> A + mem[getWord(data, &tempAdr, mem)];
+			output = data -> A + mem[getWord(data, address, mem) + data -> X];
 			if (data -> C == 1) { output += 256; }
 			data -> C = (output >= 256);
 			data -> V = ((data -> A & 0b10000000) != (output & 0b10000000));
@@ -899,8 +955,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_ADC_AY:
 			(*address)++;
-			tempAdr = (*address) + data -> Y;
-			output = data -> A + mem[getWord(data, &tempAdr, mem)];
+			output = data -> A + mem[getWord(data, address, mem)] + data -> Y;
 			if (data -> C == 1) { output += 256; }
 			data -> C = (output >= 256);
 			data -> V = ((data -> A & 0b10000000) != (output & 0b10000000));
@@ -989,8 +1044,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_SBC_AX:
 			(*address)++;
-			tempAdr = (*address) + data -> X;
-			output = (data -> A + (!(data -> C) * 256)) - mem[getWord(data, &tempAdr, mem)];
+			output = (data -> A + (!(data -> C) * 256)) - mem[getWord(data, address, mem)+ data -> X];
 			data -> C = (output >= 256);
 			data -> V = ((data -> A & 0b10000000) != (output & 0b10000000));
 			data -> A = output;
@@ -1002,8 +1056,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 			break;
 		case INS_SBC_AY:
 			(*address)++;
-			tempAdr = (*address) + data -> Y;
-			output = (data -> A + (!(data -> C) * 256)) - mem[getWord(data, &tempAdr, mem)];
+			output = (data -> A + (!(data -> C) * 256)) - mem[getWord(data, address, mem) + data -> Y];
 			data -> C = (output >= 256);
 			data -> V = ((data -> A & 0b10000000) != (output & 0b10000000));
 			data -> A = output;
@@ -1066,7 +1119,7 @@ uint16_t execute(struct data *data, uint8_t *mem, uint16_t *address, uint8_t tes
 		case INS_RTS_IP:
 			uint8_t highByte = stackPop(data, mem, testing_mode);
 			uint8_t lowByte = stackPop(data, mem, testing_mode);
-			(*address) = (lowByte | (highByte << 8));
+			(*address) = (lowByte | (highByte << 8)) + 2;
 			if (testing_mode > 3) {
 				printf("Low address byte: %02x\n", lowByte);
 				printf("High address byte: %02x\n", highByte);
