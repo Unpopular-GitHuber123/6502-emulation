@@ -10,7 +10,9 @@
 #define INS_RTI_IP 0x40
 
 // Meta (there isn't any hardware so these are necessary)
-#define MTA_OFF_IP 0x00 // turn it off
+#define MTA_OFS_IP 0x00 // turn it off and save
+#define MTA_OFF_IP 0x07 // turn it off without saving
+#define MTA_SAV_IP 0x0B // save
 #define MTA_KYB_IP 0x04 // wait for keyboard input
 
 // Processing status

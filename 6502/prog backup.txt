@@ -3,4 +3,5 @@ mfffffa; Go to the reset vector
 00;
 40;
 m400000; This is the program start.
-ea;
+ea; No op
+00; Turn off

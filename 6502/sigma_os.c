@@ -1,3 +1,15 @@
+/*
+
+	Sigma OS is an operating system designed for the MOS 6502
+	upgraded with a 16 bit stack pointer and 24 bit address bus.
+	That's not a very realistic upgrade but shut your mouth.
+
+	License: MIT (Do whatever with it basically. DISCLAIMER: 
+	I'm not a lawyer. Don't take my summaries for legal
+	advice.)
+
+*/
+
 #include "cpu6502.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -95,20 +107,20 @@ int main() {
     for (int i = 0; i < nextFree; i++) {
         printf("%c", string[i]);
     }
-
-	fptr = fopen("prog.txt", "w");
-
-	if (fptr == NULL) {
-		perror("AHHH ABORT ABORT FAILED TO OPEN FILE!!! AH!!!!");
-		return 1;
-	}
-
-	save(mem, fptr);
-
-	fclose(fptr);
-
-	free(mem);
+	if (data.C) {
+		fptr = fopen("prog.txt", "w");
 	
+		if (fptr == NULL) {
+			perror("AHHH ABORT ABORT FAILED TO OPEN FILE!!! AH!!!!");
+			return 1;
+		}
+
+		save(mem, fptr);
+
+		fclose(fptr);
+
+		free(mem);
+	}
 
 	return 0;
 }

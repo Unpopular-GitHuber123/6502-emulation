@@ -365,6 +365,22 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 		case MTA_OFF_IP:
 			data -> clk = 0;
 			data -> cyclenum += 1;
+			data -> C = 0;
+			break;
+		case MTA_SAV_IP:
+			FILE *fptr;
+			fptr = fopen("prog.txt", "w");
+			if (fptr == NULL) {
+				perror("AHHH ABORT ABORT FAILED TO OPEN FILE!!! AH!!!!");
+				return 1;
+			}
+			save(mem, fptr);
+			fclose(fptr);
+			break;
+		case MTA_OFS_IP:
+			data -> clk = 0;
+			data -> cyclenum += 1;
+			data -> C = 1;
 			break;
 		case MTA_KYB_IP:
 			scanf("%s", keyboard_addr);
