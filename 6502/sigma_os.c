@@ -27,7 +27,7 @@ int main() {
 
 	// Make the memory
 	uint8_t *mem = (uint8_t*) malloc(1024 * 1024 * 16); // 16 megs wow!
-
+	
 	// This is just so the program is out of the way and it's easier to navigate main.
 	FILE *fptr;
 
@@ -37,7 +37,7 @@ int main() {
 		perror("AHHH ABORT ABORT FAILED TO OPEN FILE!!! AH!!!!");
 		return 1;
 	}
-
+	
 	loadProgFromFile(data, mem, fptr);
 
 	fclose(fptr);
@@ -96,9 +96,21 @@ int main() {
         printf("%c", string[i]);
     }
 
-	free(mem);
+	fptr = fopen("prog.txt", "w");
 
-	return data.exit_code;
+	if (fptr == NULL) {
+		perror("AHHH ABORT ABORT FAILED TO OPEN FILE!!! AH!!!!");
+		return 1;
+	}
+
+	save(mem, fptr);
+
+	fclose(fptr);
+
+	free(mem);
+	
+
+	return 0;
 }
 
 void loadProg(uint8_t *mem) {

@@ -184,22 +184,22 @@ uint32_t hexToDec(char *string, int len) {
 			case '9':
 				val += pow(16, len - idx) * 9;
 				break;
-			case 'A':
+			case 'a':
 				val += pow(16, len - idx) * 10;
 				break;
-			case 'B':
+			case 'b':
 				val += pow(16, len - idx) * 11;
 				break;
-			case 'C':
+			case 'c':
 				val += pow(16, len - idx) * 12;
 				break;
-			case 'D':
+			case 'd':
 				val += pow(16, len - idx) * 13;
 				break;
-			case 'E':
+			case 'e':
 				val += pow(16, len - idx) * 14;
 				break;
-			case 'F':
+			case 'f':
 				val += pow(16, len - idx) * 15;
 				break;
 			default:
@@ -234,29 +234,29 @@ uint32_t hexToDec(char *string, int len) {
 		case '9':
 			val += 9;
 			break;
-		case 'A':
+		case 'a':
 			val += 10;
 			break;
-		case 'B':
+		case 'b':
 			val += 11;
 			break;
-		case 'C':
+		case 'c':
 			val += 12;
 			break;
-		case 'D':
+		case 'd':
 			val += 13;
 			break;
-		case 'E':
+		case 'e':
 			val += 14;
 			break;
-		case 'F':
+		case 'f':
 			val += 15;
 			break;
 		default:
 			break;
 		}
 
-		// yeah I know there are better ways to do this but I'm lazy
+		// yeah I know there are better ways to do this but I'm lazy and I just want to get this done
 
 	return val;
 }
@@ -288,9 +288,50 @@ void loadProgFromFile(struct data data, uint8_t* mem, FILE *fp) {
 				lineAdr++;
 			}
 			mem[address] = hexToDec(tok, lineAdr - 2);
-			printf("val: %02x at: %06x\n", mem[address], address);
 			address++;
 		}
+	}
+
+	return;
+}
+
+void save(uint8_t *mem, FILE *fptr) {
+	uint32_t lastAddr = 0x000000;
+	uint32_t address = 0x000000;
+	while (address < MAX_MEM) {
+		if (lastAddr == 0) {
+			if (mem[address] == 0) {
+				address++;
+				continue;
+			} else {
+				lastAddr = address;
+				fprintf(fptr, "m%06x;\n%02x;\n", address, mem[address]);
+				address++;
+				continue;
+			}
+		}
+
+		if (mem[address] == 0) {
+			if ((address - lastAddr) > 10) {
+				address++;
+				continue;
+			} else {
+				fprintf(fptr, "%02x;\n", mem[address]);
+				address++;
+				continue;
+			}
+		}
+
+		if ((address - lastAddr) > 10) {
+			fprintf(fptr, "m%06x;\n%02x;\n", address, mem[address]);
+			lastAddr = address;
+			address++;
+			continue;
+		}
+		
+		fprintf(fptr, "%02x;\n", mem[address]);
+		lastAddr = address;
+		address++;
 	}
 
 	return;
