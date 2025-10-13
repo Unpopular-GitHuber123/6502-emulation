@@ -5,12 +5,12 @@
 // Most are untested lmao
 
 // System control
-#define INS_BRK_IP 0x00
+#define INS_BRK_IP 0x03 // This is swapped with the "off" instruction because it helps when you make an oopsie
 #define INS_NOP_IP 0xEA
 #define INS_RTI_IP 0x40
 
 // Meta (there isn't any hardware so these are necessary)
-#define MTA_OFF_IP 0x03 // turn it off
+#define MTA_OFF_IP 0x00 // turn it off
 #define MTA_KYB_IP 0x04 // wait for keyboard input
 
 // Processing status

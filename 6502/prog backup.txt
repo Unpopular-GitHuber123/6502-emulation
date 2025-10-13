@@ -1,6 +1,6 @@
-mFFFFFA; Go to the reset vector
+mfffffa; Go to the reset vector
 00; 0x400000: Program start.
 00;
 40;
 m400000; This is the program start.
-03;
+ea;

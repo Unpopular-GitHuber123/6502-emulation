@@ -316,8 +316,17 @@ void save(uint8_t *mem, FILE *fptr) {
 				address++;
 				continue;
 			} else {
-				fprintf(fptr, "%02x;\n", mem[address]);
-				address++;
+				uint8_t print = 0;
+				for (int i = 0; i < 10; i++) {
+					address++;
+					if (mem[address] != 0) {
+						print = 1;
+						break;
+					}
+				}
+				if (print) {
+					fprintf(fptr, "%02x;\n", mem[address]);
+				}
 				continue;
 			}
 		}
@@ -1617,7 +1626,7 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 			data -> cyclenum += 2;
 			break;
 		default:
-			printf("Unrecognised instruction at address: %06x\n", *address);
+			printf("Unrecognised instruction %02x at address: %06x\n", mem[*address], *address);
 	}
 	if (testing_mode > 3) {
 		printf("C: %d Z: %d I: %d D: %d B: %d clk: %d V: %d N: %d\n", data -> C, data -> Z, data -> I, data -> D, data -> B, data -> clk, data -> V, data -> N);
