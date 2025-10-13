@@ -1,14 +1,16 @@
+// Documentation: http://www.6502.org/users/obelisk/index.html (go to the "reference" tab)
+
 // Opcodes:
 
-// All are untested except ones that specify otherwise
+// Most are untested lmao
 
 // System control
 #define INS_BRK_IP 0x00
 #define INS_NOP_IP 0xEA
 #define INS_RTI_IP 0x40
 
-// Meta (there isn't any hardware so these are necessary)
-#define MTA_OFF_IP 0x03
+// Meta (there isn't any hardware so this is necessary)
+#define MTA_OFF_IP 0x03 // turn it off
 
 // Processing status
 #define INS_CLD_IP 0xD8
