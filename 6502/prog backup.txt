@@ -1,23 +1,11 @@
 m200000;
 a9;
-36; // char to print
+3e; char to print
 20;
 00;
 01;
 20;
-a9;
-37; // char to print
-20;
-00;
-01;
-20;
-a9;
-0a; // char to print
-20;
-00;
-01;
-20;
-a9;
+a9; print to the screen
 02;
 8d;
 ff;
@@ -27,34 +15,42 @@ ff;
 00;
 02;
 20;
+04;
+00;
+00;
+01;
+00;
+ff;
+ff;
+1f;
 m200100; print char from A reg
 8d;
 fe;
 ff;
 1f;
-a9; // lda
+a9; lda
 00;
-8d; // sta
+8d; sta
 ff;
 ff;
 1f;
-a9; // lda
+a9; lda
 01;
-8d; // sta
+8d; sta
 ff;
 ff;
 1f;
 60;
 m200200; reset IO chars
-a9; // lda
+a9; lda
 00;
-8d; // sta
+8d; sta
 ff;
 ff;
 1f;
-a9; // lda
+a9; lda
 00;
-8d; // sta
+8d; sta
 fe;
 ff;
 1f;

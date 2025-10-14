@@ -36,7 +36,7 @@ void storeMem(uint8_t *mem, uint32_t address, uint8_t value, struct data *data);
 
 uint32_t getAddr(struct data *data, uint32_t *address, uint8_t *mem);
 
-void save(uint8_t *mem, FILE *fptr);
+void save(uint8_t *mem, FILE *fptr, uint32_t *range);
 
 uint8_t* initialise_mem(struct data data, uint8_t* mem);
 

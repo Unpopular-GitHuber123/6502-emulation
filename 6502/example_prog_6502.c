@@ -17,7 +17,7 @@ int main() {
 	// Set the testing mode: 0 is no debug info, 1 is some (e.g printing the address), 
 	// 2 is more (e.g printing addresses jumped to), 3 is most (e.g printing values 
 	// pushed to/pulled from the stack), 4 is everything (e.g printing the registers)
-	uint8_t testing_mode = 4;
+	uint8_t testing_mode = 3;
 	
 	// Make the data struct that contains all of the register info
 	struct data data;

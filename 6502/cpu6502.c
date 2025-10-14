@@ -1,9 +1,9 @@
 /*******************************************************
 
 This emulation is similar to the MOS 6502 processor.
-It is not a 1:1 emulation, especially with the specs, 
-but it is close. It has almost 1:1 accuracy with the
-opcodes, with only 4 custom ones.
+It is not an exact emulation, but it is close. It has 
+almost 1:1 accuracy with the opcodes, with only 4 custom 
+ones.
 
 Also I gave it a 24 bit address bus because I wanna 
 write an OS in it!!! (I'venever written one before lmao)
@@ -257,6 +257,7 @@ uint32_t hexToDec(char *string, int len) {
 
 		// yeah I know there are better ways to do this but I'm lazy and I just want to get this done
 
+	//printf("STRING: %s VAL: %06x LEN: %d\n", string, val, len);
 	return val;
 }
 
@@ -287,6 +288,7 @@ void loadProgFromFile(struct data data, uint8_t* mem, FILE *fp) {
 				lineAdr++;
 			}
 			mem[address] = hexToDec(tok, lineAdr - 2);
+			//printf("val: %02x addr: %06x\n", mem[address], address);
 			address++;
 		}
 	}
@@ -294,10 +296,15 @@ void loadProgFromFile(struct data data, uint8_t* mem, FILE *fp) {
 	return;
 }
 
-void save(uint8_t *mem, FILE *fptr) {
+void save(uint8_t *mem, FILE *fptr, uint32_t *range) {
 	uint32_t lastAddr = 0x000000;
 	uint32_t address = 0x000000;
+	//printf("range: %06x to %06x\n", range[0], range[1]);
 	while (address < MAX_MEM) {
+		if (address >= range[0] && address <= range[1]) {
+			address++;
+			continue;
+		}
 		if (lastAddr == 0) {
 			if (mem[address] == 0) {
 				address++;
@@ -372,22 +379,37 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 			data -> C = 0;
 			break;
 		case MTA_SAV_IP:
+			uint32_t range[2];
+			(*address)++;
+			range[0] = getAddr(data, address, mem);
+			(*address)++;
+			range[1] = getAddr(data, address, mem);
 			FILE *fptr;
 			fptr = fopen("prog.txt", "w");
 			if (fptr == NULL) {
 				perror("AHHH ABORT ABORT FAILED TO OPEN FILE!!! AH!!!!");
 				return;
 			}
-			save(mem, fptr);
+			save(mem, fptr, range);
 			fclose(fptr);
 			break;
 		case MTA_OFS_IP:
+			(*address)++;
+			range[0] = getAddr(data, address, mem);
+			(*address)++;
+			range[1] = getAddr(data, address, mem);
+			fptr = fopen("prog.txt", "w");
+			if (fptr == NULL) {
+				perror("AHHH ABORT ABORT FAILED TO OPEN FILE!!! AH!!!!");
+				return;
+			}
+			save(mem, fptr, range);
+			fclose(fptr);
 			data -> clk = 0;
 			data -> cyclenum += 1;
-			data -> C = 1;
 			break;
 		case MTA_KYB_IP:
-			scanf("%s", keyboard_addr);
+			fgets(keyboard_addr, 50, stdin);
 			data -> cyclenum += 10;
 			break;
 		case INS_BRK_IP:

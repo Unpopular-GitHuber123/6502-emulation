@@ -83,7 +83,7 @@ int main() {
 			alreadyPrinted = 1;
 		} else {
 			alreadyPrinted = 0;
-            if (testing_mode > 2) 
+            if (testing_mode > 2)
             {
                 printf("Addr cleared: %06x\n", data.PC);
             }
@@ -98,6 +98,7 @@ int main() {
 		}
 		if ((mem[IO_RANGE[1]] & 0b0000010) > 0) {
 			if (alreadyPrintedToScr == 0) {
+				string[nextFree] = '\0';
 				printf("%s", string);
 				if (mem[IO_RANGE[1]] & 0b00000100 > 0) {
 					memset(string, 0, (IO_RANGE[1] - IO_RANGE[0]) - 2);
@@ -112,21 +113,6 @@ int main() {
 	// Print some debug info
 	printf("Clock cycles: %d\n", data.cyclenum);
 	printf("Final address: %06x\n", (data.PC - 1) & 0xFFFFFF);
-
-	if (data.C) {
-		fptr = fopen("prog.txt", "w");
-	
-		if (fptr == NULL) {
-			perror("AHHH ABORT ABORT FAILED TO OPEN FILE!!! AH!!!!");
-			return 1;
-		}
-
-		save(mem, fptr);
-
-		fclose(fptr);
-
-		free(mem);
-	}
 
 	return 0;
 }
