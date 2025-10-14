@@ -80,6 +80,9 @@ int main() {
     for (int i = 0; i < nextFree; i++) {
         printf("%c", string[i]);
     }
+	for (int i = 0; i < nextFree; i++) {
+        printf("%02x ", string[i]);
+    }
 
 	free(mem);
 

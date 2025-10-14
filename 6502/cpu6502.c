@@ -264,12 +264,12 @@ uint32_t hexToDec(char *string, int len) {
 void loadProgFromFile(struct data data, uint8_t* mem, FILE *fp) {
 	uint32_t address = 0x000000;
 	
-	char line[50];
+	char line[300];
 	char c;
-	while (fgets(line, 50, fp)) {
+	while (fgets(line, 300, fp)) {
 		uint8_t lineAdr = 0;
 		c = line[lineAdr];
-		char tok[50];
+		char tok[20];
 		if (c == 'm') {
 			while (c != ';' && c != '\n') {
 				c = line[lineAdr];
@@ -378,9 +378,8 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 			data -> cyclenum += 1;
 			data -> C = 0;
 			break;
-		case MTA_SAV_IP:
+		case MTA_SAV_RG:
 			uint32_t range[2];
-			(*address)++;
 			(*address)++;
 			range[0] = getAddr(data, address, mem);
 			(*address)++;
@@ -394,8 +393,7 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 			save(mem, fptr, range);
 			fclose(fptr);
 			break;
-		case MTA_OFS_IP:
-			(*address)++;
+		case MTA_OFS_RG:
 			(*address)++;
 			range[0] = getAddr(data, address, mem);
 			(*address)++;
@@ -411,7 +409,7 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 			data -> cyclenum += 1;
 			break;
 		case MTA_KYB_IP:
-			fgets(keyboard_addr, 50, stdin);
+			fgets(keyboard_addr, 250, stdin);
 			data -> cyclenum += 10;
 			break;
 		case INS_BRK_IP:
@@ -454,12 +452,14 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 			break;
 		case INS_STA_IX:
 			(*address)++;
-			mem[(mem[(*address) + data -> X]) & 0b11111111] = data -> A;
+			temp = mem[(mem[*address] + data -> X) & 0b11111111];
+			mem[getAddr(data, &temp, mem)] = data -> A;
 			data -> cyclenum += 6;
 			break;
 		case INS_STA_IY:
 			(*address)++;
-			mem[mem[*address] + data -> Y] = data -> A;
+			temp = mem[(mem[*address]) & 0b11111111];
+			mem[getAddr(data, &temp, mem)  + data -> Y] = data -> A;
 			data -> cyclenum += 6;
 			break;
 		case INS_RTI_IP:
@@ -779,115 +779,115 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 		case INS_CMP_IM:
 			(*address)++;
 			temp = (uint8_t) data -> A - mem[*address];
-			data -> N = (temp & 0b10000000 > 0);
-			data -> C = (data -> A >= mem[*address]);
-			data -> Z = (data -> A > mem[*address]);
+			data -> N = ((temp & 0b10000000) > 0);
+			data -> C = ((temp & 0b10000000) == 0);
+			data -> Z = (temp == 0);
 			data -> cyclenum += 2;
 			break;
 		case INS_CMP_ZP:
 			(*address)++;
 			temp = (uint8_t) data -> A - mem[mem[*address]];
-			data -> N = (temp & 0b10000000 > 0);
-			data -> C = (data -> A >= mem[*address]);
-			data -> Z = (data -> A > mem[*address]);
+			data -> N = ((temp & 0b10000000) > 0);
+			data -> C = ((temp & 0b10000000) == 0);
+			data -> Z = (temp == 0);
 			data -> cyclenum += 3;
 			break;
 		case INS_CMP_ZX:
 			(*address)++;
 			temp = (uint8_t) data -> A - mem[(mem[*address] + data -> X) & 0b11111111];
-			data -> N = (temp & 0b10000000 > 0);
-			data -> C = (data -> A >= mem[*address]);
-			data -> Z = (data -> A > mem[*address]);
+			data -> N = ((temp & 0b10000000) > 0);
+			data -> C = ((temp & 0b10000000) == 0);
+			data -> Z = (temp == 0);
 			data -> cyclenum += 4;
 			break;
 		case INS_CMP_AB:
 			(*address)++;
 			temp = (uint8_t) data -> A - mem[getAddr(data, address, mem)];
-			data -> N = (temp & 0b10000000 > 0);
-			data -> C = (data -> A >= mem[*address]);
-			data -> Z = (data -> A > mem[*address]);
+			data -> N = ((temp & 0b10000000) > 0);
+			data -> C = ((temp & 0b10000000) == 0);
+			data -> Z = (temp == 0);
 			data -> cyclenum += 4;
 			break;
 		case INS_CMP_AX:
 			(*address)++;
-			temp = (uint8_t) data -> A - mem[(getAddr(data, address, mem) + data -> X) & 0b11111111];
-			data -> N = (temp & 0b10000000 > 0);
-			data -> C = (data -> A >= mem[*address]);
-			data -> Z = (data -> A > mem[*address]);
+			temp = (uint8_t) data -> A - mem[getAddr(data, address, mem) + data -> X];
+			data -> N = ((temp & 0b10000000) > 0);
+			data -> C = ((temp & 0b10000000) == 0);
+			data -> Z = (temp == 0);
 			data -> cyclenum += 5;
 			break;
 		case INS_CMP_AY:
 			(*address)++;
-			temp = (uint8_t) data -> A - mem[(getAddr(data, address, mem) + data -> Y) & 0b11111111];
-			data -> N = (temp & 0b10000000 > 0);
-			data -> C = (data -> A >= mem[*address]);
-			data -> Z = (data -> A > mem[*address]);
+			temp = (uint8_t) (data -> A - mem[getAddr(data, address, mem) + data -> Y]);
+			data -> N = ((temp & 0b10000000) > 0);
+			data -> C = ((temp & 0b10000000) == 0);
+			data -> Z = (temp == 0);
 			data -> cyclenum += 5;
 			break;
 		case INS_CMP_IX:
 			(*address)++;
 			uint8_t temp3 = mem[(mem[*address] + data -> X) & 0b11111111];
 			temp = (data -> A - mem[temp3]) & 0b11111111;
-			data -> N = (temp & 0b10000000 > 0);
-			data -> C = (data -> A >= mem[*address]);
-			data -> Z = (data -> A > mem[*address]);
+			data -> N = ((temp & 0b10000000) > 0);
+			data -> C = ((temp & 0b10000000) == 0);
+			data -> Z = (temp == 0);
 			data -> cyclenum += 6;
 			break;
 		case INS_CMP_IY:
 			(*address)++;
 			temp3 = mem[mem[*address]];
-			temp = (data -> A - ((getAddr(data, (uint32_t*) (&temp3), mem) + data -> Y) & 0b11111111)) & 0b11111111;
-			data -> N = (temp & 0b10000000 > 0);
-			data -> C = (data -> A >= mem[*address]);
-			data -> Z = (data -> A > mem[*address]);
+			temp = (data -> A - mem[getAddr(data, (uint32_t*) &temp3, mem) + data -> Y]) & 0b11111111;
+			data -> N = ((temp & 0b10000000) > 0);
+			data -> C = ((temp & 0b10000000) == 0);
+			data -> Z = (temp == 0);
 			data -> cyclenum += 6;
 			break;
 		case INS_CPX_IM:
 			(*address)++;
 			temp = (uint8_t) data -> X - mem[*address];
-			data -> N = (temp & 0b10000000 > 0);
-			data -> C = (data -> X >= mem[*address]);
-			data -> Z = (data -> X > mem[*address]);
+			data -> N = ((temp & 0b10000000) > 0);
+			data -> C = ((temp & 0b10000000) == 0);
+			data -> Z = (temp == 0);
 			data -> cyclenum += 2;
 			break;
 		case INS_CPX_ZP:
 			(*address)++;
 			temp = (uint8_t) data -> X - mem[mem[*address]];
-			data -> N = (temp & 0b10000000 > 0);
-			data -> C = (data -> X >= mem[*address]);
-			data -> Z = (data -> X > mem[*address]);
+			data -> N = ((temp & 0b10000000) > 0);
+			data -> C = ((temp & 0b10000000) == 0);
+			data -> Z = (temp == 0);
 			data -> cyclenum += 3;
 			break;
 		case INS_CPX_AB:
 			(*address)++;
 			temp = (uint8_t) data -> X - mem[*address];
-			data -> N = (temp & 0b10000000 > 0);
-			data -> C = (data -> X >= mem[*address]);
-			data -> Z = (data -> X > mem[*address]);
+			data -> N = ((temp & 0b10000000) > 0);
+			data -> C = ((temp & 0b10000000) == 0);
+			data -> Z = (temp == 0);
 			data -> cyclenum += 4;
 			break;
 		case INS_CPY_IM:
 			(*address)++;
 			temp = (uint8_t) data -> Y - mem[*address];
-			data -> N = (temp & 0b10000000 > 0);
-			data -> C = (data -> Y >= mem[*address]);
-			data -> Z = (data -> Y > mem[*address]);
+			data -> N = ((temp & 0b10000000) > 0);
+			data -> C = ((temp & 0b10000000) == 0);
+			data -> Z = (temp == 0);
 			data -> cyclenum += 2;
 			break;
 		case INS_CPY_ZP:
 			(*address)++;
 			temp = (uint8_t) data -> Y - mem[mem[*address]];
-			data -> N = (temp & 0b10000000 > 0);
-			data -> C = (data -> Y >= mem[*address]);
-			data -> Z = (data -> Y > mem[*address]);
+			data -> N = ((temp & 0b10000000) > 0);
+			data -> C = ((temp & 0b10000000) == 0);
+			data -> Z = (temp == 0);
 			data -> cyclenum += 3;
 			break;
 		case INS_CPY_AB:
 			(*address)++;
 			temp = (uint8_t) data -> Y - mem[*address];
-			data -> N = (temp & 0b10000000 > 0);
-			data -> C = (data -> Y >= mem[*address]);
-			data -> Z = (data -> Y > mem[*address]);
+			data -> N = ((temp & 0b10000000) > 0);
+			data -> C = ((temp & 0b10000000) == 0);
+			data -> Z = (temp == 0);
 			data -> cyclenum += 4;
 			break;
 		case INS_AND_IM:
@@ -1086,18 +1086,18 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 				if (mem[*address] & 0b10000000) 
 				{ 
 					*address -= mem[*address] & 0b01111111;
-				} 
-				else 
+				}
+				else
 				{  
 					*address += mem[*address] & 0b01111111;
 				} 
 				if (testing_mode > 1) {
-						printf("Branched to: %06x\n", *address);
-						data -> cyclenum += 1;
+					printf("Branched to: %06x\n", *address);
 				}
+				data -> cyclenum += 1;
 			} else {
 				if (testing_mode > 1) {
-					printf("Failed to branch.\n", *address);
+					printf("Failed to branch. Now at address:%06x\n", *address);
 				}
 			}
 			data -> cyclenum += 4;
@@ -1114,12 +1114,12 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 					*address += mem[*address] & 0b01111111;
 				} 
 				if (testing_mode > 1) {
-						printf("Branched to: %06x\n", *address);
-						data -> cyclenum += 1;
+					printf("Branched to: %06x\n", *address);
 				}
+				data -> cyclenum += 1;
 			} else {
 				if (testing_mode > 1) {
-					printf("Failed to branch.\n", *address);
+					printf("Failed to branch. Now at address:%06x\n", *address);
 				}
 			}
 			data -> cyclenum += 4;
@@ -1136,12 +1136,34 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 					*address += mem[*address] & 0b01111111;
 				} 
 				if (testing_mode > 1) {
-						printf("Branched to: %06x\n", *address);
-						data -> cyclenum += 1;
+					printf("Branched to: %06x\n", *address);
 				}
+				data -> cyclenum += 1;
 			} else {
 				if (testing_mode > 1) {
-					printf("Failed to branch.\n", *address);
+					printf("Failed to branch. Now at address:%06x\n", *address);
+				}
+			}
+			data -> cyclenum += 4;
+			break;
+		case INS_BCC_RL:
+			(*address)++;
+			if (!(data -> C)) { 
+				if (mem[*address] & 0b10000000) 
+				{ 
+					*address -= mem[*address] & 0b01111111;
+				} 
+				else 
+				{  
+					*address += mem[*address] & 0b01111111;
+				} 
+				if (testing_mode > 1) {
+					printf("Branched to: %06x\n", *address);
+				}
+				data -> cyclenum += 1;
+			} else {
+				if (testing_mode > 1) {
+					printf("Failed to branch. Now at address:%06x\n", *address);
 				}
 			}
 			data -> cyclenum += 4;
@@ -1158,12 +1180,12 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 					*address += mem[*address] & 0b01111111;
 				}
 				if (testing_mode > 1) {
-						printf("Branched to: %06x\n", *address);
-						data -> cyclenum += 1;
+					printf("Branched to: %06x\n", *address);
 				}
+				data -> cyclenum += 1;
 			} else {
 				if (testing_mode > 1) {
-					printf("Failed to branch.\n", *address);
+					printf("Failed to branch. Now at address:%06x\n", *address);
 				}
 			}
 			data -> cyclenum += 4;
@@ -1181,11 +1203,11 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 				}
 				if (testing_mode > 1) {
 					printf("Branched to: %06x\n", *address);
-					data -> cyclenum += 1;
 				}
+				data -> cyclenum += 1;
 			} else {
 				if (testing_mode > 1) {
-					printf("Failed to branch.\n", *address);
+					printf("Failed to branch. Now at address:%06x\n", *address);
 				}
 			}
 			data -> cyclenum += 4;
@@ -1203,11 +1225,11 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 				}
 				if (testing_mode > 1) {
 					printf("Branched to: %06x\n", *address);
-					data -> cyclenum += 1;
 				}
+				data -> cyclenum += 1;
 			} else {
 				if (testing_mode > 1) {
-					printf("Failed to branch.\n", *address);
+					printf("Failed to branch. Now at address:%06x\n", *address);
 				}
 			}
 			data -> cyclenum += 4;
@@ -1225,11 +1247,11 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 				}
 				if (testing_mode > 1) {
 					printf("Branched to: %06x\n", *address);
-					data -> cyclenum += 1;
 				}
+				data -> cyclenum += 1;
 			} else {
 				if (testing_mode > 1) {
-					printf("Failed to branch.\n", *address);
+					printf("Failed to branch. Now at address:%06x\n", *address);
 				}
 			}
 			data -> cyclenum += 4;
@@ -1474,16 +1496,19 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 			(*address)++;
 			*address = getAddr(data, address, mem) - 1;
 			if (testing_mode > 1) {
-				printf("Address jumped to: %06x\n", *address + 1);
+				printf("Address jumped to: %06x\n", (*address) + 1);
 			}
 			data -> cyclenum += 3;
 			break;
 		case INS_JMP_ID:
 			(*address)++;
 			uint32_t addr = getAddr(data, address, mem);
+			if (testing_mode > 1) {
+				printf("Address of address: %06x\n", addr);
+			}
 			(*address) = getAddr(data, &addr, mem) - 1;
 			if (testing_mode > 1) {
-				printf("Address jumped to: %06x\n", *address + 1);
+				printf("Address jumped to: %06x\n", (*address) + 1);
 			}
 			data -> cyclenum += 5;
 			break;
@@ -1626,14 +1651,16 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 			break;
 		case INS_LDA_IX:
 			(*address)++;
-			data -> A = mem[mem[*address + data -> X]];
+			temp = mem[(mem[*address] + data -> X) & 0b11111111];
+			data -> A = mem[getAddr(data, &temp, mem)];
 			data -> Z = (data -> A == 0);
 			data -> N = ((data -> A & 0b10000000) > 0);
 			data -> cyclenum += 6;
 			break;
 		case INS_LDA_IY:
 			(*address)++;
-			data -> A = mem[(mem[*address] + data -> Y) & 0b11111111];
+			temp = mem[mem[*address]];
+			data -> A = mem[getAddr(data, &temp, mem) + data -> Y];
 			data -> Z = (data -> A == 0);
 			data -> N = ((data -> A & 0b10000000) > 0);
 			data -> cyclenum += 6;

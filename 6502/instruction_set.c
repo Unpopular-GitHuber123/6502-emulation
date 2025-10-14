@@ -10,9 +10,9 @@
 #define INS_RTI_IP 0x40 // Return from interrupt
 
 // Meta (there isn't any hardware so these are necessary)
-#define MTA_OFS_IP 0x00 // Turn it off and save
+#define MTA_OFS_RG 0x00 // Turn it off and save (range)
 #define MTA_OFF_IP 0x07 // Turn it off without saving
-#define MTA_SAV_IP 0x0B // Save
+#define MTA_SAV_RG 0x0B // Save (range)
 #define MTA_KYB_IP 0x04 // Wait for keyboard input (normally done with an interrupt)
 
 // Processing status
@@ -125,6 +125,7 @@
 
 // Branches
 #define INS_BCS_RL 0xB0 // Branch if carry set
+#define INS_BCC_RL 0x90 // Branch if carry clear
 #define INS_BEQ_RL 0xF0 // Branch if zero set
 #define INS_BMI_RL 0x30 // Branch if negative set
 #define INS_BNE_RL 0xD0 // Branch if zero clear
@@ -159,9 +160,9 @@
 #define INS_STX_ZP 0x96
 #define INS_STX_ZY 0x8E
 
-#define INS_STY_AB 0x84 // Store Y
-#define INS_STY_ZP 0x94
-#define INS_STY_ZX 0x8C
+#define INS_STY_ZP 0x84 // Store Y
+#define INS_STY_ZX 0x94
+#define INS_STY_AB 0x8C
 
 // Registers
 #define INS_DEX_IP 0xCA // Decrement

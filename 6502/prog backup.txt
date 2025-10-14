@@ -1,24 +1,47 @@
 m200000; bootloader moment frfr :skull:
 a9;
-3e; char to print
+3e; load > into char buffer
 20;
 00;
 10;
 20;
 a9; print to the screen
-02;
+06;
 8d;
 ff;
 ff;
 1f;
 04; keyboard
-00; save and exit, not saving from 0x000100 to 1fffff (RAM inc. stack)
+a9; initialise zero page
 00;
-01;
+85;
 00;
-ff;
-ff;
+a9;
 1f;
+85;
+01;
+a9;
+20;
+85;
+02;
+e6; increment the command number
+01;
+a0; load 00 into Y
+00;
+20; compare IO and string
+30;
+10;
+20;
+90; branch if carry clear
+8a; back to increment
+c8; increment y (because it points to the newline char)
+84; load the address of the command into 00
+00;
+6c;
+00;
+00;
+00;
+07; exit without saving; this shouldn't happen but it's a nice failsafe
 m201000; print char from A reg
 8d;
 fe;
@@ -37,6 +60,63 @@ ff;
 ff;
 1f;
 60;
-mfffffc;
+m201030; compare IO with ZP string
+b1; go to address 00 (INS_LDA_IY)
+00; and then go to *that* address plus Y
+d9; cmp_ay
+00;
+ff;
+1f;
+08; save processor status
+c8; increment Y
+e9; subtract with carry
+0a; newline
+f0; branch if equal
+05;
+28; load processor status
+f0; branch if equal
+8f;
+18;
+60; it is not equal: clear carry
+88; decrement Y
+b9; load accumulator abs_y
+00;
+ff;
+1f;
+ba; stack stuff
+e8;
+9a;
+c9; cmp
+0a; newline
+d0; branch if not equal
+8d;
+38;
+60; it is equal: set carry
+m202000; data for bootloader
+65; command "exit"
+78;
+69; nice
+74;
+0a; newline is terminating character
+07; exit
+m202100; second command
+73; command "save"
+61;
+76;
+65;
+0a;
+0b;
+00;
+00;
+00;
+ff;
+ff;
+1f;
+4c;
+00;
+00;
 20;
-m201020; config info for bootloader
+mfffffa;
+00;
+00;
+20;

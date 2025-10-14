@@ -19,9 +19,11 @@
 
 /*
 Custom input output range (Inside the RAM range). Address 1FFFFF is "wired up" 
-to the screen's on/off signal (1 on, 0 off), and the print signal (10 on, 00 
+to the screen's write signal (1 on, 0 off), and the print signal (10 on, 00 
 off.), and the clear signal (100 on, 000 off.). The clear signal only clears 
-on printing to the screen. Address 1FFFFE is the byte to display.
+on printing to the screen. Address 1FFFFE is the byte to display. The write 
+signal adds the byte to display to the buffer. The print signal prints it to the
+terminal.
 */
 const uint32_t IO_RANGE[2] = {0x1FFF00, 0x1FFFFF};
 
@@ -29,7 +31,7 @@ int main() {
 	// Set the testing mode: 0 is no debug info, 1 is some (e.g printing the address), 
 	// 2 is more (e.g printing addresses jumped to), 3 is most (e.g printing values 
 	// pushed to/pulled from the stack), 4 is everything (e.g printing the registers)
-	uint8_t testing_mode = 0;
+	uint8_t testing_mode = 4;
 	
 	// Make the data struct that contains all of the register info
 	struct data data;
@@ -98,8 +100,9 @@ int main() {
 			if (alreadyPrintedToScr == 0) {
 				string[nextFree] = '\0';
 				printf("%s", string);
-				if (mem[IO_RANGE[1]] & 0b00000100 > 0) {
-					memset(string, 0, (IO_RANGE[1] - IO_RANGE[0]) - 2);
+				if ((mem[IO_RANGE[1]] & 0b00000100) > 0) {
+					memset(string, 0, ((IO_RANGE[1] - IO_RANGE[0]) - 2));
+					nextFree = 0;
 				}
 			}
 			alreadyPrintedToScr = 1;
