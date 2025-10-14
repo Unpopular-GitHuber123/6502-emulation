@@ -381,6 +381,7 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 		case MTA_SAV_IP:
 			uint32_t range[2];
 			(*address)++;
+			(*address)++;
 			range[0] = getAddr(data, address, mem);
 			(*address)++;
 			range[1] = getAddr(data, address, mem);
@@ -394,6 +395,7 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 			fclose(fptr);
 			break;
 		case MTA_OFS_IP:
+			(*address)++;
 			(*address)++;
 			range[0] = getAddr(data, address, mem);
 			(*address)++;

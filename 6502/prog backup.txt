@@ -1,9 +1,9 @@
-m200000;
+m200000; bootloader moment frfr :skull:
 a9;
 3e; char to print
 20;
 00;
-01;
+10;
 20;
 a9; print to the screen
 02;
@@ -11,19 +11,15 @@ a9; print to the screen
 ff;
 ff;
 1f;
-20;
-00;
-02;
-20;
-04;
-00;
+04; keyboard
+00; save and exit, not saving from 0x000100 to 1fffff (RAM inc. stack)
 00;
 01;
 00;
 ff;
 ff;
 1f;
-m200100; print char from A reg
+m201000; print char from A reg
 8d;
 fe;
 ff;
@@ -41,19 +37,6 @@ ff;
 ff;
 1f;
 60;
-m200200; reset IO chars
-a9; lda
-00;
-8d; sta
-ff;
-ff;
-1f;
-a9; lda
-00;
-8d; sta
-fe;
-ff;
-1f;
-60;
 mfffffc;
 20;
+m201020; config info for bootloader
