@@ -3,11 +3,10 @@
 This emulation is similar to the MOS 6502 processor.
 It is not a 1:1 emulation, especially with the specs, 
 but it is close. It has almost 1:1 accuracy with the
-opcodes, with only 2 custom ones.
+opcodes, with only 4 custom ones.
 
-Also I gave it a 24 bit address bus and 12 bit stack 
-pointer because I wanna write an OS in it!!! (I've
-never written one before lmao)
+Also I gave it a 24 bit address bus because I wanna 
+write an OS in it!!! (I'venever written one before lmao)
 
 It has a maximum addressable memory of 16 MB, including
 RAM, programmable ROM, and a stack. These would be external
@@ -24,17 +23,16 @@ Helpful video: https://www.youtube.com/watch?v=qJgsuQoy9bc
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <sys/types.h>
 #include <unistd.h>
 #include "instruction_set.c"
 
 // Memory (Change the ranges as you want but be prepared for seg faults and unexpected behaviour):
 const uint32_t MAX_MEM = 0xFFFFFF;
 const uint32_t ZPAGE_RANGE[2] = {0x000000, 0x0000FF};
-const uint32_t STACK_RANGE[2] = {0x000100, 0x0010FF};
-const uint32_t RAM_RANGE[2] = {0x001100, 0x3FFFFF};
-const uint32_t ROM_RANGE[2] = {0x400000, 0xFFFFFF};
-const uint32_t SYSMEM_RANGE[2] = {0xFFF000, 0xFFFFFF};
+const uint32_t STACK_RANGE[2] = {0x000100, 0x0001FF};
+const uint32_t RAM_RANGE[2] = {0x000200, 0x1FFFFF}; // Little less than 2 megabytes of RAM
+const uint32_t ROM_RANGE[2] = {0x200000, 0xFFFFFF}; // 14 megabytes of ROM inc. sysmem (Not actually read only. This is just program memory.)
+const uint32_t SYSMEM_RANGE[2] = {0xFF0000, 0xFFFFFF}; // Bootloader and OS and stuff (64 KB)
 
 struct data {
 	uint8_t C : 1; // Carry
@@ -47,7 +45,7 @@ struct data {
 	uint8_t N : 1; // Negative flag
 
 	uint32_t PC; // Program counter
-	uint16_t SP; // Stack pointer
+	uint8_t SP; // Stack pointer
     
     uint8_t exit_code;
 	uint8_t A, X, Y; // Accumulator, X, Y
@@ -122,6 +120,7 @@ uint8_t stackPop(struct data *data, uint8_t *mem, uint8_t testing_mode) {
 	}
 
 	uint8_t toReturn = mem[data -> SP + STACK_RANGE[0]];
+	mem[data -> SP + STACK_RANGE[0]] = 0;
 
 	if (testing_mode > 2) {
 		printf("Value returned from stack: %02x\n", toReturn);
@@ -312,26 +311,31 @@ void save(uint8_t *mem, FILE *fptr) {
 		}
 
 		if (mem[address] == 0) {
-			if ((address - lastAddr) > 10) {
+			if ((address - lastAddr) > 16) {
 				address++;
 				continue;
 			} else {
 				uint8_t print = 0;
-				for (int i = 0; i < 10; i++) {
+				uint32_t savedAddress = address;
+				for (int i = 0; i < 16; i++) {
 					address++;
 					if (mem[address] != 0) {
 						print = 1;
 						break;
 					}
 				}
+				address = savedAddress;
 				if (print) {
 					fprintf(fptr, "%02x;\n", mem[address]);
+					address++;
+				} else {
+					lastAddr -= 16;
 				}
 				continue;
 			}
 		}
 
-		if ((address - lastAddr) > 10) {
+		if ((address - lastAddr) > 16) {
 			fprintf(fptr, "m%06x;\n%02x;\n", address, mem[address]);
 			lastAddr = address;
 			address++;
@@ -372,7 +376,7 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 			fptr = fopen("prog.txt", "w");
 			if (fptr == NULL) {
 				perror("AHHH ABORT ABORT FAILED TO OPEN FILE!!! AH!!!!");
-				return 1;
+				return;
 			}
 			save(mem, fptr);
 			fclose(fptr);

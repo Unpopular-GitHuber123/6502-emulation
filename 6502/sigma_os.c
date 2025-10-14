@@ -14,17 +14,18 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 #include <errno.h>
 
 void loadProg(uint8_t* mem);
 
 /*
-Custom input output range (Inside the RAM range). Address 5FFF is "wired up" 
-to the screen's on/off signal (1 on, 0 off). Address 5FFE is "wired up" 
-to the pointer to the byte to display. (Add the value to the starting address
-of the IO range.)
+Custom input output range (Inside the RAM range). Address 1FFFFF is "wired up" 
+to the screen's on/off signal (1 on, 0 off), and the print signal (10 on, 00 
+off.), and the clear signal (100 on, 000 off.). The clear signal only clears 
+on printing to the screen. Address 1FFFFE is the byte to display.
 */
-const uint32_t IO_RANGE[2] = {0x3FFF00, 0x3FFFFF};
+const uint32_t IO_RANGE[2] = {0x1FFF00, 0x1FFFFF};
 
 int main() {
 	// Set the testing mode: 0 is no debug info, 1 is some (e.g printing the address), 
@@ -50,6 +51,8 @@ int main() {
 		return 1;
 	}
 	
+	initialise_mem(data, mem);
+
 	loadProgFromFile(data, mem, fptr);
 
 	fclose(fptr);
@@ -59,17 +62,17 @@ int main() {
 	0, activating it, etc). Note: It is important to load the program before resetting 
 	data, as it will look for a vector at 0xFFFC and 0xFFFD.
 	*/
-	initialise_mem(data, mem);
 	reset(&data, mem);
 
 	// Execute the program
 	int alreadyPrinted = 0;
+	int alreadyPrintedToScr = 0;
 	int nextFree = 0;
-	char string[IO_RANGE[1] - IO_RANGE[0]];
+	char string[(IO_RANGE[1] - IO_RANGE[0]) - 2];
 	while (data.clk == 1) {
 		execute(&data, mem, &data.PC, testing_mode, &mem[IO_RANGE[0]]);
 		// Custom screen component
-		if (mem[IO_RANGE[1]]) {
+		if ((mem[IO_RANGE[1]] & 0b00000001) > 0) {
 			if (alreadyPrinted == 0) {
 				string[nextFree] = mem[IO_RANGE[1] - 1];
 				nextFree++;
@@ -93,8 +96,16 @@ int main() {
         if (testing_mode > 0) {
 			printf("\n");
 		}
-		if (data.cyclenum > 50) {
-			break;
+		if ((mem[IO_RANGE[1]] & 0b0000010) > 0) {
+			if (alreadyPrintedToScr == 0) {
+				printf("%s", string);
+				if (mem[IO_RANGE[1]] & 0b00000100 > 0) {
+					memset(string, 0, (IO_RANGE[1] - IO_RANGE[0]) - 2);
+				}
+			}
+			alreadyPrintedToScr = 1;
+		} else {
+			alreadyPrintedToScr = 0;
 		}
 	}
 
@@ -102,11 +113,6 @@ int main() {
 	printf("Clock cycles: %d\n", data.cyclenum);
 	printf("Final address: %06x\n", (data.PC - 1) & 0xFFFFFF);
 
-	// Output onto the terminal
-	printf("TERMINAL OUTPUT:\n");
-    for (int i = 0; i < nextFree; i++) {
-        printf("%c", string[i]);
-    }
 	if (data.C) {
 		fptr = fopen("prog.txt", "w");
 	

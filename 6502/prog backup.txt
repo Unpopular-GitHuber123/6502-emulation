@@ -1,7 +1,63 @@
-mfffffa; Go to the reset vector
-00; 0x400000: Program start.
+m200000;
+a9;
+36; // char to print
+20;
 00;
-40;
-m400000; This is the program start.
-ea; No op
-00; Turn off
+01;
+20;
+a9;
+37; // char to print
+20;
+00;
+01;
+20;
+a9;
+0a; // char to print
+20;
+00;
+01;
+20;
+a9;
+02;
+8d;
+ff;
+ff;
+1f;
+20;
+00;
+02;
+20;
+m200100; print char from A reg
+8d;
+fe;
+ff;
+1f;
+a9; // lda
+00;
+8d; // sta
+ff;
+ff;
+1f;
+a9; // lda
+01;
+8d; // sta
+ff;
+ff;
+1f;
+60;
+m200200; reset IO chars
+a9; // lda
+00;
+8d; // sta
+ff;
+ff;
+1f;
+a9; // lda
+00;
+8d; // sta
+fe;
+ff;
+1f;
+60;
+mfffffc;
+20;
