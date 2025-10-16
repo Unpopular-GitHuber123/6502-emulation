@@ -10,9 +10,9 @@
 #define INS_RTI_IP 0x40 // Return from interrupt
 
 // Meta (there isn't any hardware so these are necessary)
-#define MTA_OFS_RG 0x00 // Turn it off and save (range)
+#define MTA_OFS_IP 0x00 // Turn it off and save
 #define MTA_OFF_IP 0x07 // Turn it off without saving
-#define MTA_SAV_RG 0x0B // Save (range)
+#define MTA_SAV_IP 0x0B // Save
 #define MTA_KYB_IP 0x04 // Wait for keyboard input (normally done with an interrupt)
 
 // Processing status

@@ -1,8 +1,37 @@
 Opcodes: http://www.6502.org/users/obelisk/index.html (go to "references")
 
+""""""ASSEMBLER"""""" DOCS:
+
 In "prog.txt" you can do two things. Change the memory address, and change what is at that address. 
 
 All values are in hex.
 To change the memory address, type 'm' and then the address in hex.
 To change the value at the address, type the value. It will automatically update the address in the next line.
 End each line with a semicolon. You can also add comments after a semicolon.
+
+BOOTLOADER DOCS:
+
+Super Simple Sixty-five-oh-two Shell Bootloader (SSSSB)
+
+Commands:
+
+info:
+Displays the name and version of the bootloader
+
+scan:
+Finds the OS file and loads the address into memory. (ZP address 0x80-0x82, or 128-130)
+
+    scan manual: Input a 6 digit hex address with the order of bytes reversed. (It was just easier to implement that way.)
+    scan auto: Automatically scans the entire hard drive for a file with the right type (system binary) and name (os)
+
+boot:
+Boots the OS. It throws an error if the address of the file is not in ROM. (Because it defaults to 0x000000, which is in RAM.)
+
+Error codes:
+00: File not found.
+
+OPERATING SYSTEM DOCS:
+
+ZPOS: (the) Zero Page (was really useful when programming this) Operating System
+
+the operating system doesn't exist yet lmao

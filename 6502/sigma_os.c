@@ -1,8 +1,7 @@
 /*
 
-	Sigma OS is an operating system designed for the MOS 6502
-	upgraded with a 16 bit stack pointer and 24 bit address bus.
-	That's not a very realistic upgrade but shut your mouth.
+	Sigma OS is an operating system designed for the MOS 6502 
+	with a 24 bit address bus.
 
 	License: MIT (Do whatever with it basically. DISCLAIMER: 
 	I'm not a lawyer. Don't take my summaries for legal
@@ -31,7 +30,7 @@ int main() {
 	// Set the testing mode: 0 is no debug info, 1 is some (e.g printing the address), 
 	// 2 is more (e.g printing addresses jumped to), 3 is most (e.g printing values 
 	// pushed to/pulled from the stack), 4 is everything (e.g printing the registers)
-	uint8_t testing_mode = 4;
+	uint8_t testing_mode = 0;
 	
 	// Make the data struct that contains all of the register info
 	struct data data;
