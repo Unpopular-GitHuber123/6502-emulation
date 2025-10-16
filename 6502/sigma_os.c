@@ -24,7 +24,7 @@ on printing to the screen. Address 1FFFFE is the byte to display. The write
 signal adds the byte to display to the buffer. The print signal prints it to the
 terminal.
 */
-const uint32_t IO_RANGE[2] = {0x1FFF00, 0x1FFFFF};
+const uint32_t IO_RANGE[2] = {0x0FFF00, 0x0FFFFF};
 
 int main() {
 	// Set the testing mode: 0 is no debug info, 1 is some (e.g printing the address), 

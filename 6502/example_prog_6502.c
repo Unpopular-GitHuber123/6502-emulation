@@ -11,13 +11,13 @@ to the screen's on/off signal (1 on, 0 off). Address 5FFE is "wired up"
 to the pointer to the byte to display. (Add the value to the starting address
 of the IO range.)
 */
-const uint32_t IO_RANGE[2] = {0x1FFF00, 0x1FFFFF};
+const uint32_t IO_RANGE[2] = {0x0FFF00, 0x0FFFFF};
 
 int main() {
 	// Set the testing mode: 0 is no debug info, 1 is some (e.g printing the address), 
 	// 2 is more (e.g printing addresses jumped to), 3 is most (e.g printing values 
 	// pushed to/pulled from the stack), 4 is everything (e.g printing the registers)
-	uint8_t testing_mode = 3;
+	uint8_t testing_mode = 4;
 	
 	// Make the data struct that contains all of the register info
 	struct data data;

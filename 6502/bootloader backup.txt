@@ -1,33 +1,33 @@
-m200000; bootloader moment frfr :skull:
+m100000; bootloader moment frfr :skull:
 a9;
 3e; load > into char buffer
 20;
+30;
 00;
 10;
-20;
 a9; print to the screen
 06;
 8d;
 ff;
 ff;
-1f;
+0f;
 04; keyboard
 a9; initialise zero page
 00;
 85;
 00;
 a9;
-1f;
+02;
 85;
 01;
 a9;
-20;
+10;
 85;
 02;
 e6; increment the command number
 01;
 a9;
-25; final command number (+20)
+15; final command number (+10)
 c5; cmp
 01;
 90; branch if carry clear
@@ -35,9 +35,9 @@ a1;
 a0; load 00 into Y
 00;
 20; compare IO and string
-30;
+60;
+00;
 10;
-20;
 90; branch if carry clear
 90; back to increment
 c8; increment y (because it points to the newline char)
@@ -48,31 +48,31 @@ c8; increment y (because it points to the newline char)
 00;
 00;
 07; exit without saving; this shouldn't happen but it's a nice failsafe
-m201000; print char from A reg
+m100030; print char from A reg
 8d;
 fe;
 ff;
-1f;
+0f;
 a9; lda
 00;
 8d; sta
 ff;
 ff;
-1f;
+0f;
 a9; lda
 01;
 8d; sta
 ff;
 ff;
-1f;
+0f;
 60;
-m201030; compare IO with ZP string
+m100060; compare IO with ZP string
 b1; go to address 00 (INS_LDA_IY)
 00; and then go to *that* address plus Y
 d9; cmp_ay
 00;
 ff;
-1f;
+0f;
 08; save processor status
 c8; increment Y
 c9; cmp
@@ -88,7 +88,7 @@ f0; branch if equal
 b9; load accumulator abs_y
 00;
 ff;
-1f;
+0f;
 28; pull processor status
 c9; cmp
 0a; newline
@@ -96,14 +96,14 @@ d0; branch if not equal
 8c;
 38;
 60; it is equal: set carry
-m202000; data for bootloader
+m100300; data for bootloader
 65; command "exit"
 78;
 69; nice
 74;
 0a; newline is terminating character
 07; exit
-m202100; second command
+m100400; second command
 73; cmd "save"
 61;
 76;
@@ -113,8 +113,8 @@ m202100; second command
 4c;
 00;
 00;
-20;
-m202200; cmd "scan manual"
+10;
+m100500; cmd "scan manual"
 73; 's'
 63; 'c'
 61;
@@ -130,26 +130,26 @@ m202200; cmd "scan manual"
 a9;
 3e; load > into char buffer
 20;
+30;
 00;
 10;
-20;
 a9; print to the screen
 06;
 8d;
 ff;
 ff;
-1f;
+0f;
 04; keyboard
 20; jmp
-00;
-00;
-21;
+40;
+11;
+10;
 4c; jump back
 00;
 00;
-20;
+10;
 07; exit (shouldn't happen)
-m202300; cmd "scan auto"
+m100600; cmd "scan auto"
 73; 's'
 63; 'c'
 61;
@@ -160,15 +160,15 @@ m202300; cmd "scan auto"
 74;
 6f;
 0a; '\n'
-20; loop through entire memory looking for header
-00;
-f0;
-20;
+20; loop through metadata looking for the file
+80;
+10;
+10;
 4c; jump back
 00;
 00;
-20;
-m202400; cmd "boot"
+10;
+m100700; cmd "boot"
 62;
 6f;
 6f;
@@ -177,8 +177,8 @@ m202400; cmd "boot"
 a5; load A
 82; most significant byte of address
 c9;
-20;
-90; if it's not more than or equal to 20 (ROM start), then GET OUT!!!!!!
+10;
+90; if it's not more than or equal to 10 (ROM start), then GET OUT!!!!!!
 04;
 6c; jump indirect
 80;
@@ -188,15 +188,15 @@ a9; load error code 00 onto the stack
 30;
 48;
 48;
-20;
+20; print err 00
 00;
-e0;
-20;
+10;
+10;
 4c; go back
 00;
 00;
-20;
-m202500; cmd "info"
+10;
+m100800; cmd "info"
 69;
 6e;
 66;
@@ -236,9 +236,9 @@ a9;
 48; push the character
 48; push the character
 20;
-00;
-e1;
-20;
+40;
+10;
+10;
 ba; tsx
 8a; txa
 18; clc
@@ -249,8 +249,8 @@ aa; tax
 4c;
 00;
 00;
-20;
-m20e000; subroutine to print an error code stored in the stack
+10;
+m101000; subroutine to print an error code stored in the stack
 ba; tsx
 e8;
 e8;
@@ -287,9 +287,9 @@ a9; load character 'E'
 45;
 48; push the character
 20;
-00;
-e1;
-20;
+40;
+10;
+10;
 ba; tsx
 8a; txa
 18; clc
@@ -298,7 +298,7 @@ ba; tsx
 aa; tax
 9a; txs
 60;
-m20e100; subroutine to print a string stored in the stack
+m101040; subroutine to print a string stored in the stack
 ba; tsx
 e8; inx
 e8;
@@ -312,96 +312,96 @@ c9; is it 0?
 f0; branch if equal
 08;
 20; print the character
+30;
 00;
 10;
-20;
 4c; jump to start
-03;
-e1;
-20;
+40;
+10;
+10;
 a9; print to the screen
 06;
 8d;
 ff;
 ff;
+0f;
+60; rts
+m101080; go to file metadata looking for a file stored in stack and store it at 0x80
+b8; tsx
+e8; inx * 3
+e8;
+e8;
+a9; initialise ZP (zero page my beloved)
+ff;
+85; sta zp 80
+80;
+a9; lda 20
 1f;
-60; rts
-m20f000; loop through memory looking for the OS
-a9; initialise addresses 80, 81, and 82 in ZP
-ff;
-85;
-80;
-85;
+85; sta zp 81
 81;
-a9; store 19 in addr 82 (full addr stored is 19ffff)
-19;
-85;
+a9; lda 10
+10;
+85; sta zp 82
 82;
-a0; load 00 into Y
+8c; store Y 00
 00;
-a2; load 01 into X (X is set if last is zero)
+e8; increment X and also LOOP START
+20; jsr inc addr at 0x80
+30;
+11;
+10;
+bd;
+00;
 01;
-20; inc thing
 00;
-ff;
-20;
-b1; load accumulator indirect Y
+d1; compare A immediate 1c
+1c;
+f0; Branch if equal to the end where it compares 80 indirect Y with 1c
+04;
+d1; compare A indirect Y
 80;
-c9; compare what's there with 0
-00;
-f0; branch back to ldx_im
-8c;
-e0; cmp X
-00;
-08; push ps
-a2; load 0 into X
-00;
-28; pull ps
-f0; branch back to lda_iy
-8d;
-c9; the last was 0 and this is not 0
-ff;
-d0; if it's not ff, branch back to the beginning
-99;
-c8; increment Y
-b1; load accumulator indirect Y
+f0; Branch if equal to the start of the loop
+91;
+d0; branch if not equal to the reset thing
+0b;
+b1; load A indirect y
 80;
-c9; is the first letter o?
-6f;
-d0; branch if it isn't to the start
-a0;
-c8; increment Y
-b1; load accumulator indirect Y
-80;
-c9; is the second letter s?
-73;
-d0; branch if it isn't to the start
-a7;
-c8; increment Y
-b1; load accumulator indirect Y
-80;
-c9; is the third letter null?
-00;
-d0; branch if it isn't to the start
-ae;
-20; inc thing
-00;
-ff;
-20;
-20; inc thing
-00;
-ff;
-20;
-20; inc thing
-00;
-ff;
-20;
-20; inc thing
-00;
-ff;
-20;
+c9; compare with 1c (end of line)
+1c;
+d0; branch if it isn't equal to the reset thing
+05;
+20; is equal
+30;
+11;
+10;
 60; rts
-m20ff00
+20; jsr inc addr at 0x80 (reset) also beginning of loop 2
+30;
+11;
+10;
+b1; load A indirect y
+80;
+c9; cmp with 1c;
+1c;
+d0; branch to beginning of loop 2
+8a;
+20; jsr inc addr at 0x80 (reset) also beginning of loop 2
+30;
+11;
+10;
+20; jsr inc addr at 0x80 (reset) also beginning of loop 2
+30;
+11;
+10;
+20; jsr inc addr at 0x80 (reset) also beginning of loop 2
+30;
+11;
+10;
+4c; jump to beginning
+80;
+10;
+10;
+m101130; increment an address stored at 0x80
 e6; increment low byte
 80;
 d0; if it's not zero, skip
@@ -416,7 +416,7 @@ d0; if it's not zero, skip
 02;
 07; exit without saving
 60;
-m210000; IO string to hex subroutine (I'm bad at binary ok don't judge)
+m101140; IO string to hex subroutine (I'm bad at binary ok don't judge)
 a0; load Y 00
 00;
 a2; load X 00
@@ -424,16 +424,16 @@ a2; load X 00
 b9; load A abs_y
 00;
 ff;
-1f;
-20; jsr 210040
-40;
-00;
-21;
+0f;
+20; jsr hex to dec
+80;
+11;
+10;
 0a; asl (accumulator)
 0a;
 0a;
 0a;
-9d; thing
+9d; load character into ZP
 80;
 00;
 00;
@@ -441,17 +441,17 @@ c8; increment Y
 b9; load A abs_y
 00;
 ff;
-1f;
-20; jsr 210040
-40;
-00;
-21;
+0f;
+20; jsr hex to dec
+80;
+11;
+10;
 18; clear carry (probably unnecessary but I'm not taking any chances)
 7d; adc AX
 80;
 00;
 00;
-9d; thing
+9d; load character
 80;
 00;
 00;
@@ -464,7 +464,7 @@ b0; branch if Y >= 05 (to RTS)
 90;
 aa;
 60; rts
-m210040; hex digit to dec
+m101180; hex digit to dec
 c9; cmp_im
 61; ascii for a
 90; branch if carry clear (is reg A < ascii a)
@@ -477,57 +477,40 @@ e9; subtract immediate
 e9; subtract immediate
 30;
 60; rts
-m210200; operating system
+m102000; File metadata
+01; binary
+01; root
+00; No more directories
+6f; 'o'
+73; 's'
+00; No more name
+04; Size: 4 kb
 00;
-ff; header
-6f; name is 'os' (no newline)
-73;
-00;
-a9; load A '*' (this is address 210205)
+1c; End metadata (not really)
+00; Address: 122800
+28;
+12;
+m122800; operating system (134 kb ahead of start)
+a9; load A '*'
 2a;
 20; print A reg
+30;
 00;
 10;
-20;
 a9; load A '\n'
 0a;
 20; print A reg
+30;
 00;
 10;
-20;
 a9; print to the screen
 06;
 8d;
 ff;
 ff;
-1f;
+0f;
 07; exit without saving
-m210100; other file (testing)
-00;
-ff;
-6f;
-73;
-0a;
-a9; load A '6' (this is address 210105)
-36;
-20; print A reg
-00;
-10;
-20;
-a9; load A '\n'
-0a;
-20; print A reg
-00;
-10;
-20;
-a9; print to the screen
-06;
-8d;
-ff;
-ff;
-1f;
-07;
 mfffffa;
 00;
 00;
-20;
+10;

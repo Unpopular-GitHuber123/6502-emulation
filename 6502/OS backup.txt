@@ -1,0 +1,33 @@
+m102000; File metadata
+01; binary
+01; root
+00; No more directories
+6f; 'o'
+73; 's'
+00; No more name
+04; Size: 4 kb
+00;
+1c; End metadata (not really)
+00; Address: 122800
+28;
+12;
+m122800; operating system (134 kb ahead of start)
+a9; load A '*'
+2a;
+20; print A reg
+30;
+00;
+10;
+a9; load A '\n'
+0a;
+20; print A reg
+30;
+00;
+10;
+a9; print to the screen
+06;
+8d;
+ff;
+ff;
+0f;
+07; exit without saving

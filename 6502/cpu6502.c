@@ -30,8 +30,8 @@ Helpful video: https://www.youtube.com/watch?v=qJgsuQoy9bc
 const uint32_t MAX_MEM = 0xFFFFFF;
 const uint32_t ZPAGE_RANGE[2] = {0x000000, 0x0000FF};
 const uint32_t STACK_RANGE[2] = {0x000100, 0x0001FF};
-const uint32_t RAM_RANGE[2] = {0x000200, 0x1FFFFF}; // Little less than 2 megabytes of RAM
-const uint32_t ROM_RANGE[2] = {0x200000, 0xFFFFFF}; // 14 megabytes of ROM inc. sysmem (Not actually read only. This is just program memory.)
+const uint32_t RAM_RANGE[2] = {0x000200, 0x0FFFFF}; // Little less than 1 megabyte of RAM
+const uint32_t ROM_RANGE[2] = {0x100000, 0xFFFFFF}; // 15 megabytes of ROM inc. sysmem (Not actually read only. This is just program memory.)
 
 struct data {
 	uint8_t C : 1; // Carry
@@ -380,7 +380,7 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 		case MTA_SAV_IP:
 			uint32_t range[2];
 			range[0] = 0x000000;
-			range[1] = 0x1fffff;
+			range[1] = 0x0fffff;
 			FILE *fptr;
 			fptr = fopen("prog.txt", "w");
 			if (fptr == NULL) {
@@ -392,7 +392,7 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 			break;
 		case MTA_OFS_IP:
 			range[0] = 0x000000;
-			range[1] = 0x1fffff;
+			range[1] = 0x0fffff;
 			fptr = fopen("prog.txt", "w");
 			if (fptr == NULL) {
 				perror("AHHH ABORT ABORT FAILED TO OPEN FILE!!! AH!!!!");
@@ -1676,9 +1676,6 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 			temp = getAddr(data, &temp, mem) + data -> Y;
 			//printf("addr: %06x\n", temp);
 			//printf("val: %02x\n", mem[temp]);
-			if (temp <= 0x19f000) {
-				data -> clk = 0;
-			}
 			data -> A = mem[temp];
 			data -> Z = (data -> A == 0);
 			data -> N = ((data -> A & 0b10000000) > 0);

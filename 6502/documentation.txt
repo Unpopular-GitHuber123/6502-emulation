@@ -1,6 +1,7 @@
 Opcodes: http://www.6502.org/users/obelisk/index.html (go to "references")
 
-""""""ASSEMBLER"""""" DOCS:
+
+-- """"""ASSEMBLER"""""" DOCS: --
 
 In "prog.txt" you can do two things. Change the memory address, and change what is at that address. 
 
@@ -9,7 +10,8 @@ To change the memory address, type 'm' and then the address in hex.
 To change the value at the address, type the value. It will automatically update the address in the next line.
 End each line with a semicolon. You can also add comments after a semicolon.
 
-BOOTLOADER DOCS:
+
+-- BOOTLOADER DOCS: --
 
 Super Simple Sixty-five-oh-two Shell Bootloader (SSSSB)
 
@@ -30,8 +32,39 @@ Boots the OS. It throws an error if the address of the file is not in ROM. (Beca
 Error codes:
 00: File not found.
 
-OPERATING SYSTEM DOCS:
+Zero page usage:
+The bootloader uses the zero page (ZP) for a couple of different things.
+At address 00, 01, and 02, it stores the address of the current command it's checking.
+At address 80, 81, and 82, it stores the address of the file it's looking for in metadata.
 
-ZPOS: (the) Zero Page (was really useful when programming this) Operating System
+-- FILE SYSTEM DOCS: --
+
+IIFS: Insecure Inefficient File System
+
+File metadata is stored in this format:
+
+Type (1 byte)
+Directory (01 is root)
+NULL to signify it is in no more directories
+Name (ASCII)
+NULL to signify end of string
+Address (3 bytes)
+Size (2 bytes. It measured in kb.)
+NULL
+
+There is a minimum file size of 4 kb.
+The file acts sort of like a linked list. At the end of every kilobyte, there are 4 bytes. A file separator (1c), and then the address of the next sector, or NULL if that's the end of the file.
+
+Directory metadata is stored in this format:
+
+Directory
+NULL to signify no more directories
+Name
+NULL to signify end of string and end of this directory's metadata.
+
+
+-- OPERATING SYSTEM DOCS: --
+
+ZPOS: (the) Zero Page (was really useful when writing this) Operating System
 
 the operating system doesn't exist yet lmao
