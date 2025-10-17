@@ -423,6 +423,7 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 		case INS_STA_ZP:
 			(*address)++;
 			mem[mem[*address]] = data -> A;
+			//printf("storing to: %02x\n", mem[*address]);
 			data -> cyclenum += 3;
 			break;
 		case INS_STA_ZX:
@@ -454,8 +455,8 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 			break;
 		case INS_STA_IY:
 			(*address)++;
-			temp = mem[(mem[*address]) & 0b11111111];
-			mem[getAddr(data, &temp, mem)  + data -> Y] = data -> A;
+			temp = mem[*address];
+			mem[getAddr(data, &temp, mem) + data -> Y] = data -> A;
 			data -> cyclenum += 6;
 			break;
 		case INS_RTI_IP:
@@ -553,6 +554,7 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 		case INS_INC_ZP:
 			(*address)++;
 			temp = (uint32_t) mem[*address];
+			//printf("Incrementing address %06x at address %06x\n", temp, *address);
 			mem[temp]++;
 			data -> Z = (mem[temp] == 0);
 			data -> B = ((mem[temp] & 0b10000000) > 1);
@@ -789,6 +791,7 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 			temp = (uint8_t) (data -> A - mem[*address]);
 			if (testing_mode > 2) {
 				printf("Comparing A with %02x\n", mem[*address]);
+				printf("A is %02x\n", data -> A);
 			}
 			data -> N = ((temp & 0b10000000) > 0);
 			data -> C = ((temp & 0b10000000) == 0);
@@ -846,8 +849,14 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 			break;
 		case INS_CMP_IY:
 			(*address)++;
-			temp3 = mem[mem[*address]];
-			temp = (data -> A - mem[getAddr(data, (uint32_t*) &temp3, mem) + data -> Y]) & 0b11111111;
+			uint32_t temp4 = mem[*address];
+			temp2 = getAddr(data, &temp4, mem) + data -> Y;
+			temp = (data -> A - mem[temp2]) & 0b11111111;
+			//printf("%02x%02x%02x\n", mem[0x000080], mem[0x000081], mem[0x000082]);
+			//printf("Comparing A with val at val at: %02x\n", temp4 - 2);
+			//printf("Comparing A with val at: %06x\n", temp2);
+			//printf("Comparing A with: %02x\n", mem[temp2]);
+			//printf("A is: %02x\n", data -> A);
 			data -> N = ((temp & 0b10000000) > 0);
 			data -> C = ((temp & 0b10000000) == 0);
 			data -> Z = (temp == 0);
@@ -1227,6 +1236,7 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 		case INS_BNE_RL:
 			(*address)++;
 			if (!(data -> Z)) { 
+				//printf("Branched from: %06x\n", *address);
 				if (mem[*address] & 0b10000000) 
 				{ 
 					*address -= (mem[*address] & 0b01111111) + 1;
@@ -1543,6 +1553,7 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 			if (testing_mode > 3) {
 				printf("Low address byte: %02x\n", lowByte);
 				printf("High address byte: %02x\n", highByte);
+				printf("High high address byte: %02x\n", highHighByte);
 			}
 			if (testing_mode > 1) {
 				printf("Address returned to: %06x\n", *address + 1);
@@ -1649,7 +1660,14 @@ void execute(struct data *data, uint8_t *mem, uint32_t *address, uint8_t testing
 			break;
 		case INS_LDA_AX:
 			(*address)++;
-			data -> A = mem[getAddr(data, address, mem) + data -> X];
+			temp = getAddr(data, address, mem) + data -> X;
+			data -> A = mem[temp];
+			//printf("X:%02x\n", data -> X);
+			//printf("A:%02x\n", mem[temp]);
+			//printf("A - 1:%02x\n", mem[temp - 1]);
+			//printf("A - 2:%02x\n", mem[temp - 2]);
+			//printf("A + 1:%02x\n", mem[temp + 1]);
+			//printf("A + 2:%02x\n", mem[temp + 2]);
 			data -> Z = (data -> A == 0);
 			data -> N = ((data -> A & 0b10000000) > 0);
 			data -> cyclenum += 5;

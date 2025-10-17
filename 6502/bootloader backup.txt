@@ -160,6 +160,33 @@ m100600; cmd "scan auto"
 74;
 6f;
 0a; '\n'
+a9; load A
+1c;
+48; push A
+a9; load A
+00;
+48; push A
+a9; load A
+04;
+48; push A
+a9; load A
+00;
+48; push A
+a9; load A
+73;
+48; push A
+a9; load A
+6f;
+48; push A
+a9; load A
+00;
+48; push A
+a9; load A
+01;
+48; push A
+a9; load A
+01;
+48; push A
 20; loop through metadata looking for the file
 80;
 10;
@@ -316,7 +343,7 @@ f0; branch if equal
 00;
 10;
 4c; jump to start
-40;
+43;
 10;
 10;
 a9; print to the screen
@@ -326,16 +353,18 @@ ff;
 ff;
 0f;
 60; rts
-m101080; go to file metadata looking for a file stored in stack and store it at 0x80
+m101080; go to file metadata looking for a file stored in stack and store it at 0x80 (CURRENT ERROR: storing the wrong address there)
 b8; tsx
-e8; inx * 3
-e8;
-e8;
+8a; txa
+18; clc
+e9; sbc 09
+09;
+aa; tax
 a9; initialise ZP (zero page my beloved)
 ff;
 85; sta zp 80
 80;
-a9; lda 20
+a9; lda 1f
 1f;
 85; sta zp 81
 81;
@@ -343,18 +372,18 @@ a9; lda 10
 10;
 85; sta zp 82
 82;
-8c; store Y 00
+a0; load Y 00
 00;
 e8; increment X and also LOOP START
 20; jsr inc addr at 0x80
 30;
 11;
 10;
-bd;
+bd; lda_ax
 00;
 01;
 00;
-d1; compare A immediate 1c
+c9; compare A immediate 1c
 1c;
 f0; Branch if equal to the end where it compares 80 indirect Y with 1c
 04;
@@ -363,7 +392,7 @@ d1; compare A indirect Y
 f0; Branch if equal to the start of the loop
 91;
 d0; branch if not equal to the reset thing
-0b;
+0c;
 b1; load A indirect y
 80;
 c9; compare with 1c (end of line)
@@ -375,30 +404,34 @@ d0; branch if it isn't equal to the reset thing
 11;
 10;
 60; rts
-20; jsr inc addr at 0x80 (reset) also beginning of loop 2
-30;
+20; jsr inc addr at 0x80 (this is reset location) also beginning of loop 2
+30; inc 0x80
 11;
 10;
 b1; load A indirect y
 80;
 c9; cmp with 1c;
 1c;
-d0; branch to beginning of loop 2
-8a;
-20; jsr inc addr at 0x80 (reset) also beginning of loop 2
+d0; branch if not equal to beginning of loop 2
+89;
+20; jsr inc addr at 0x80
 30;
 11;
 10;
-20; jsr inc addr at 0x80 (reset) also beginning of loop 2
+20; jsr inc addr at 0x80
 30;
 11;
 10;
-20; jsr inc addr at 0x80 (reset) also beginning of loop 2
+20; jsr inc addr at 0x80
+30;
+11;
+10;
+20; jsr inc addr at 0x80
 30;
 11;
 10;
 4c; jump to beginning
-80;
+94;
 10;
 10;
 m101130; increment an address stored at 0x80
@@ -481,17 +514,51 @@ m102000; File metadata
 01; binary
 01; root
 00; No more directories
+60; not 'o'
+73; 's'
+00; No more name
+04; Size: 4 kb
+00;
+1c; End metadata (not really)
+4c; jmp
+00; Address: 122800
+29;
+12;
+01; binary
+01; root
+00; No more directories
 6f; 'o'
 73; 's'
 00; No more name
 04; Size: 4 kb
 00;
 1c; End metadata (not really)
+4c; jmp
 00; Address: 122800
 28;
 12;
 m122800; operating system (134 kb ahead of start)
 a9; load A '*'
+2a;
+20; print A reg
+30;
+00;
+10;
+a9; load A '\n'
+0a;
+20; print A reg
+30;
+00;
+10;
+a9; print to the screen
+06;
+8d;
+ff;
+ff;
+0f;
+07; exit without saving
+m122900; operating system (134 kb ahead of start)
+36; load A '6'
 2a;
 20; print A reg
 30;

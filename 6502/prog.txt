@@ -160,10 +160,42 @@ m100600; cmd "scan auto"
 74;
 6f;
 0a; '\n'
+a9; load A
+1c;
+48; push A
+a9; load A
+00;
+48; push A
+a9; load A
+04;
+48; push A
+a9; load A
+00;
+48; push A
+a9; load A
+73;
+48; push A
+a9; load A
+6f;
+48; push A
+a9; load A
+00;
+48; push A
+a9; load A
+01;
+48; push A
+48; push A
 20; loop through metadata looking for the file
 80;
 10;
 10;
+ba; tsx
+8a; txa
+18; clc
+69; A += 9
+09;
+aa; tax
+9a; txs
 4c; jump back
 00;
 00;
@@ -209,7 +241,7 @@ a9;
 0a; '\n'
 48; push the character
 a9;
-31; '1'
+32; '2'
 48; push the character
 a9;
 2e; '.'
@@ -227,7 +259,11 @@ a9;
 3a; ':'
 48; push the character
 a9;
+4c; 'L'
+48; push the character
+a9;
 42; 'B'
+48; push the character
 48; push the character
 a9;
 53; 'S'
@@ -242,8 +278,8 @@ a9;
 ba; tsx
 8a; txa
 18; clc
-69; A += 13
-13;
+69; A += 15
+0f;
 aa; tax
 9a; txs
 4c;
@@ -252,7 +288,7 @@ aa; tax
 10;
 m101000; subroutine to print an error code stored in the stack
 ba; tsx
-e8;
+e8; inx
 e8;
 e8;
 e8;
@@ -267,7 +303,7 @@ bd; load character 2 of error code
 01;
 00;
 48; push the character
-e8;
+e8; inx
 bd; load character 1 of error code
 00;
 01;
@@ -286,7 +322,7 @@ a9; load character 'R'
 a9; load character 'E'
 45;
 48; push the character
-20;
+20; jsr print stack string
 40;
 10;
 10;
@@ -316,7 +352,7 @@ f0; branch if equal
 00;
 10;
 4c; jump to start
-40;
+43;
 10;
 10;
 a9; print to the screen
@@ -326,16 +362,21 @@ ff;
 ff;
 0f;
 60; rts
-m101080; go to file metadata looking for a file stored in stack and store it at 0x80
+m101080; go to file metadata looking for a file stored in stack and store it at 0x80. WARNING: it doesn't reset the stack afterwards
 b8; tsx
-e8; inx * 3
-e8;
-e8;
+8a; txa
+18; clc
+e9; sbc 09
+09;
+aa; tax
+8a; load stack address of string into ZP
+85; sta zp 79
+79;
 a9; initialise ZP (zero page my beloved)
 ff;
 85; sta zp 80
 80;
-a9; lda 20
+a9; lda 1f
 1f;
 85; sta zp 81
 81;
@@ -350,11 +391,11 @@ e8; increment X and also LOOP START
 30;
 11;
 10;
-bd;
+bd; lda_ax
 00;
 01;
 00;
-d1; compare A immediate 1c
+c9; compare A immediate 1c
 1c;
 f0; Branch if equal to the end where it compares 80 indirect Y with 1c
 04;
@@ -363,7 +404,7 @@ d1; compare A indirect Y
 f0; Branch if equal to the start of the loop
 91;
 d0; branch if not equal to the reset thing
-0b;
+0c;
 b1; load A indirect y
 80;
 c9; compare with 1c (end of line)
@@ -375,32 +416,71 @@ d0; branch if it isn't equal to the reset thing
 11;
 10;
 60; rts
-20; jsr inc addr at 0x80 (reset) also beginning of loop 2
-30;
+20; jsr inc addr at 0x80 (this is reset location) also beginning of loop 2
+30; inc 0x80
 11;
 10;
 b1; load A indirect y
 80;
-c9; cmp with 1c;
+c9; cmp with 1c
 1c;
-d0; branch to beginning of loop 2
-8a;
-20; jsr inc addr at 0x80 (reset) also beginning of loop 2
+d0; branch if not equal to beginning of loop 2
+89;
+20; jsr inc addr at 0x80
 30;
 11;
 10;
-20; jsr inc addr at 0x80 (reset) also beginning of loop 2
+20; jsr inc addr at 0x80
 30;
 11;
 10;
-20; jsr inc addr at 0x80 (reset) also beginning of loop 2
+20; jsr inc addr at 0x80
 30;
 11;
 10;
+20; jsr inc addr at 0x80
+30;
+11;
+10;
+a6; load X the stack thingie that we did at the start
+79;
+a5; load A ZP
+82;
+c9; cmp with 12
+12;
+d0; branch if not equal to the end
+05;
+a5; load A ZP
+81;
+c9; cmp with 27
+27;
+b0; branch if more than or equal to to the error thingamajig
+04;
 4c; jump to beginning
+93;
+10;
+10;
+a9; reset ZP
+00;
+85; sta zp 80
 80;
+85; sta zp 81
+81;
+85; sta zp 82
+82;
+a9; reset ZP
+30;
+48; push A twice
+48;
+20; jsr error code
+00;
 10;
 10;
+ba; tsx, x += 2, txs
+e8;
+e8;
+9a;
+60; rts
 m101130; increment an address stored at 0x80
 e6; increment low byte
 80;
@@ -481,17 +561,53 @@ m102000; File metadata
 01; binary
 01; root
 00; No more directories
+60; not 'o'
+73; 's'
+00; No more name
+04; Size: 4 kb
+00;
+1c; End metadata (not really)
+4c; jmp
+00; Address: 122800
+29;
+12;
+01; binary
+01; root
+00; No more directories
 6f; 'o'
 73; 's'
 00; No more name
 04; Size: 4 kb
 00;
 1c; End metadata (not really)
+4c; jmp
 00; Address: 122800
 28;
 12;
+m1227ff;
+1c;
 m122800; operating system (134 kb ahead of start)
 a9; load A '*'
+2a;
+20; print A reg
+30;
+00;
+10;
+a9; load A '\n'
+0a;
+20; print A reg
+30;
+00;
+10;
+a9; print to the screen
+06;
+8d;
+ff;
+ff;
+0f;
+07; exit without saving
+m122900; operating system (134 kb ahead of start)
+36; load A '6'
 2a;
 20; print A reg
 30;

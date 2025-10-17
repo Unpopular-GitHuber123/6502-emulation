@@ -13,7 +13,7 @@ End each line with a semicolon. You can also add comments after a semicolon.
 
 -- BOOTLOADER DOCS: --
 
-Super Simple Sixty-five-oh-two Shell Bootloader (SSSSB)
+Super Simple Sixty-five-oh-two Shell Based BootLoader (SSSSBBL)
 
 Commands:
 

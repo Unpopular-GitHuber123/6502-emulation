@@ -76,7 +76,7 @@ int main() {
 				string[nextFree] = mem[IO_RANGE[1] - 1];
 				nextFree++;
                 if (testing_mode > 1) {
-                    printf("char set: %c\n", string[nextFree - 1]);
+                    printf("char set: %02x\n", string[nextFree - 1]);
                 }
 			}
 			alreadyPrinted = 1;
@@ -114,5 +114,6 @@ int main() {
 	printf("Clock cycles: %d\n", data.cyclenum);
 	printf("Final address: %06x\n", (data.PC - 1) & 0xFFFFFF);
 
+	printf("addr: %02x\n", data.PC);
 	return 0;
 }
